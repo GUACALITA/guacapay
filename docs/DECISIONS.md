@@ -1,6 +1,6 @@
 # Decisions
 
-Each entry records a choice, its reason, and what it rules out.
+Each entry records a choice, its reason, and what it rules out. Numbers are stable: prompt files and `AI_USAGE.md` refer to them.
 
 ## 001 — SQLite as the database
 
@@ -30,7 +30,7 @@ Each entry records a choice, its reason, and what it rules out.
 - **Decision:** a 6-digit code, generated with `crypto.randomInt`, valid for 10 minutes. Only its HMAC is stored. Five wrong attempts block the code. A new request replaces the pending code. A successful login returns a JWT (HS256, 1 hour, subject = user ID only).
 - **Limits:** 3 code requests per address per 15 minutes (stored in the database). 10 requests per IP per 15 minutes (in memory, reset on restart; a shared limit across instances would need a store such as Redis, added only if we run more than one instance).
 - **Anti-enumeration:** a valid request gets the same response whether or not the address has an account. Wrong, expired, used, and unknown codes all return the same error.
-- **Email:** sending goes through an interface. Until the email module exists (prompt 13), requesting a code returns 503, so no code is sent or logged.
+- **Email:** the code is sent through the email module (decision 013). If SMTP is not configured, the request returns 503 and no code is sent or logged.
 
 ## 006 — Payment states, transitions, and idempotency
 
@@ -43,7 +43,7 @@ Each entry records a choice, its reason, and what it rules out.
 ## 007 — Rapyd is reached only through the gateway
 
 - **Decision:** the app never calls Rapyd. It calls the gateway over HTTP, and only the gateway's `providers/rapyd.js` knows Rapyd URLs, field names, and signing.
-- **Signing:** as documented, `base64(hex(HMAC-SHA256(secret, method + path + salt + timestamp + access_key + secret + body)))`. Salt is 16 hex characters. The body is empty for GET and compact JSON for POST.
+- **Signing:** as documented, `base64(hex(HMAC-SHA256(secret, method + path + salt + timestamp + access_key + secret + body)))`. Salt is 16 hex characters. The body is empty for GET and compact JSON for POST. Confirmed by Rapyd's sandbox accepting a checkout request.
 - **Retries:** only network errors and timeouts are retried (twice). Each attempt gets a new salt and timestamp, and POST keeps the same `idempotency` header (the payment ID), so a retry cannot create a second checkout.
 - **Errors:** Rapyd errors become our codes (`provider_auth_failed`, `provider_rejected`, `provider_unavailable`). Rapyd's error code goes to logs only.
 - **Access:** checkout routes require `GATEWAY_TOKEN`, compared in constant time. The gateway port is bound to 127.0.0.1 in compose.
@@ -58,6 +58,11 @@ Each entry records a choice, its reason, and what it rules out.
 - **Polling:** every 60 seconds, payments waiting for two minutes are checked with the checkout status. This covers lost webhooks.
 - **Signature:** the webhook formula is `base64(HMAC-SHA256(url + salt + timestamp + access_key + secret_key + body))`, with the full URL configured in Rapyd (`RAPYD_WEBHOOK_URL`). The documentation does not say whether the HMAC is base64-encoded directly or as hex text, so both are accepted until a real sandbox webhook confirms which one Rapyd sends. No timestamp window is enforced, because Rapyd can resend old events.
 - **Shared token:** the gateway and the app use `GATEWAY_TOKEN` in both directions. The gateway does not need `HMAC_SECRET`, which protects stored codes.
+
+## 009 — The database is opened in one module
+
+- **Decision:** only `backend/src/db.js` opens the connection. Startup runs pending migrations.
+- **Reason:** one place to change connection settings, and one place to close it in tests.
 
 ## 010 — Live status: WebSocket with the token in the first message
 
@@ -76,12 +81,15 @@ Each entry records a choice, its reason, and what it rules out.
 - **Sandbox banner:** the page asks `GET /api/config`, which reports `sandbox` from `RAPYD_SANDBOX`. If the config cannot be read, the banner stays hidden.
 - **Layout:** one column, 16 px side margins, fluid width, colors as tokens with dark mode. Checked in headless Edge at 360 px wide: no horizontal overflow on the four pages.
 
-## 014 — Testing: built-in runner, fakes for every outside service
+## 012 — Claims: link first, then the code, then one transfer
 
-- **Runner:** Node's built-in test runner (`node --test`). No test framework is added.
-- **No network in automated tests:** Rapyd, the gateway, email, and transfers are fakes. The database is a temporary file. The suite passes with networking disabled.
-- **Manual sandbox check:** `backend/scripts/sandbox-check.js` calls the real gateway and Rapyd sandbox. It is kept out of `npm test` so that a normal test run never creates a real checkout.
-- **Rule proof:** a broken transition rule must make a test fail, and that check is run whenever the state rules change.
+- **Issuing:** a claim is kept only if its email is sent. The row is written first, and removed if sending fails; the payment then stays `paid` and is retried every minute. This means a stored claim always has a link that reached the recipient.
+- **Storage:** only `HMAC-SHA256(token)` is stored. The token is 32 random bytes, base64url. Expiry is 7 days, and a claim can be used once.
+- **Verifying the recipient:** the email must match the payment's recipient. A login-style code is then sent to that address (the same rules as decision 005: 5 attempts, 10 minutes).
+- **Order of checks on confirm:** claim state, then destination, then code. A wrong destination does not use up the code.
+- **Destinations:** only `https` addresses on the hosts in `CLAIM_WALLET_HOSTS` (default: the testnet host confirmed in the documentation). Query strings, fragments, and credentials are refused.
+- **Single transfer:** the claim moves to `claiming` before the transfer. A second request gets `claim_in_progress`. If the transfer is not configured, the claim returns to `open` and nothing is marked failed. If the transfer fails, the payment becomes `failed`, the reason is recorded in `payment_events`, and the claim is not reopened.
+- **Transfer:** injected, and not configured yet (the Open Payments transfer is blocked on prompt 08). Until it is, confirming a claim returns 503 and the claim stays open.
 
 ## 013 — Email: templates in files, logs without secrets
 
@@ -90,17 +98,16 @@ Each entry records a choice, its reason, and what it rules out.
 - **Failures:** a failed send becomes `email_failed` (503), so sign-in gives a clear message and no partial state is left. A failed sender notification after a claim completes is logged and does not undo the claim.
 - **Logs:** an email is logged with its type and a keyed reference to the recipient (HMAC, first 12 characters). The address, the code, and the link never appear. Transport errors are logged by code only, because some messages include the address.
 
-## 012 — Claims: link first, then the code, then one transfer
+## 014 — Testing: built-in runner, fakes for every outside service
 
-- **Issuing:** a claim link is created only after its email is sent. If the email fails, the claim is removed and the payment stays `paid`, to be retried every minute. This means a stored claim always has a link that reached the recipient.
-- **Storage:** only `HMAC-SHA256(token)` is stored. The token is 32 random bytes, base64url. Expiry is 7 days, and a claim can be used once.
-- **Verifying the recipient:** the email must match the payment's recipient. A login-style code is then sent to that address (the same rules as prompt 04: 5 attempts, 10 minutes).
-- **Order of checks on confirm:** claim state, then destination, then code. A wrong destination does not use up the code.
-- **Destinations:** only `https` addresses on the hosts in `CLAIM_WALLET_HOSTS` (default: the testnet host confirmed in the documentation). Query strings, fragments, and credentials are refused.
-- **Single transfer:** the claim moves to `claiming` before the transfer. A second request gets `claim_in_progress`. If the transfer is not configured, the claim returns to `open` and nothing is marked failed. If the transfer fails, the payment becomes `failed`, the reason is recorded in `payment_events`, and the claim is not reopened.
-- **Transfer:** injected, and not configured yet (the Open Payments transfer is blocked on prompt 08). Until it is, confirming a claim returns 503 and the claim stays open.
+- **Runner:** Node's built-in test runner (`node --test`). No test framework is added.
+- **No network in automated tests:** Rapyd, the gateway, email, and transfers are fakes. The database is a temporary file. The suite passes with networking disabled.
+- **Manual sandbox check:** `backend/scripts/sandbox-check.js` calls the real gateway and Rapyd sandbox. It is kept out of `npm test` so that a normal test run never creates a real checkout.
+- **Rule proof:** a broken transition rule must make a test fail, and that check is run whenever the state rules change.
 
-## 009 — The database is opened in one module
+## 015 — Scope: Rapyd for collection, Open Payments on testnet for transfers
 
-- **Decision:** only `backend/src/db.js` opens the connection. Startup runs pending migrations.
-- **Reason:** one place to change connection settings, and one place to close it in tests.
+- **Decision:** card money is collected through Rapyd. The transfer to the recipient uses Open Payments on the Interledger test network. Guacapay runs no node of its own.
+- **Ruled out for now:** Rafiki (we would have to run an ILP node), a Guacalita node, and any Chimoney integration.
+- **Reason:** the team has not chosen to operate a payment network yet. Testnet keeps the transfer leg real without taking on that operation.
+- **Open:** who holds the money between collection and transfer, and which currency the testnet wallet uses (EUR, while the default accepted currency is USD). Both are recorded in `docs/OPEN_PAYMENTS.md`.

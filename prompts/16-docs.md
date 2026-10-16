@@ -2,8 +2,10 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16. Checks run: no reference to the other project and no secret values in any doc; every file named in the README and architecture doc exists; every required variable is in `.env.example`; the compose file validates. **Not verified:** the "under 30 minutes" test. It needs a fresh clone, real sandbox keys and a public webhook URL, and `docker compose up` cannot run on this machine while other containers hold ports 3202, 3203 and 8026. The stack's parts were each checked separately.
+**Files produced:** `README.md` (rewritten), `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` (rewritten in order, decision 015 added, numbers unchanged), `AI_USAGE.md` (sections 3 and 4 filled in)
+
+**Open items the docs state plainly:** the webhook encoding, the transfer, the currency choice, the key mount, and the rotation of the credentials from the earlier local `.env`.
 
 ## Prompt
 
