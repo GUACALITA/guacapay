@@ -2,8 +2,8 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16, all checks passed (8/8 automated, container verified)
+**Files produced:** `backend/migrations/001-initial.sql`, `backend/src/db.js`, `backend/src/migrate.js`, `backend/src/hash.js`, `backend/test/database.test.js`, `docs/DECISIONS.md`; edited `backend/src/config.js` (DATABASE_PATH), `backend/src/server.js` (runs migrations at startup), `backend/package.json` (better-sqlite3, migrate script), `.env.example`, `docker/docker-compose.yml`, `docker/app.Dockerfile`
 
 ## Prompt
 

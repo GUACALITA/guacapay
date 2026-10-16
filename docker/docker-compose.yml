@@ -11,8 +11,9 @@ services:
       - path: ../.env
         required: false
     environment:
-      # Fixed container port. Takes precedence over .env so the host mapping below stays valid.
+      # Fixed container values. They take precedence over .env so the mappings below stay valid.
       APP_PORT: "3202"
+      DATABASE_PATH: /app/data/guacapay.db
     ports:
       - "${APP_PORT:-3202}:3202"
     volumes:

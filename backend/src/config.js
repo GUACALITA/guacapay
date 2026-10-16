@@ -54,6 +54,7 @@ export const config = {
   isProduction: nodeEnv === 'production',
   port,
   frontendDir: join(here, '..', '..', 'frontend'),
+  databasePath: process.env.DATABASE_PATH || join(here, '..', 'data', 'guacapay.db'),
   jwtSecret: process.env.JWT_SECRET,
   hmacSecret: process.env.HMAC_SECRET,
   // Values of secret-like variables, used by the logger to mask them in output.

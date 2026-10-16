@@ -5,6 +5,15 @@ import { randomUUID } from 'node:crypto';
 import { config } from './config.js';
 import { logger } from './logger.js';
 import { AppError } from './errors.js';
+import { runMigrations } from './migrate.js';
+
+try {
+  const applied = runMigrations();
+  logger.info('migrations checked', { applied });
+} catch (err) {
+  logger.error('migrations failed', { error: err.message });
+  process.exit(1);
+}
 
 const app = express();
 

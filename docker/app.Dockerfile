@@ -6,6 +6,7 @@ COPY backend/package.json ./
 RUN npm install --omit=dev
 
 COPY backend/src ./src
+COPY backend/migrations ./migrations
 # config.js resolves ../../frontend from src/, so the frontend lives at /frontend.
 COPY frontend /frontend
 
