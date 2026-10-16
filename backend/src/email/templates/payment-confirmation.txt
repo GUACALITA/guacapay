@@ -1,0 +1,8 @@
+Your payment was claimed
+
+Amount: {{amount}}
+Recipient: {{recipient}}
+
+The transfer has been completed.
+
+If you did not send this payment, contact support.

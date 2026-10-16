@@ -33,6 +33,7 @@ const ERROR_TEXT = Object.freeze({
   too_many_attempts: 'Too many wrong codes. Request a new code.',
   rate_limited: 'Too many attempts. Wait a few minutes and try again.',
   email_not_configured: 'Sign-in email is not available yet. Try again later.',
+  email_failed: 'We could not send the email. Try again shortly.',
   invalid_amount: 'Enter a valid amount.',
   invalid_currency: 'Choose a supported currency.',
   invalid_message: 'Keep the message to 500 characters or fewer.',

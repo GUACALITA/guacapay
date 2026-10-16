@@ -7,7 +7,7 @@ import { createApp } from './app.js';
 import { createGatewayClient } from './gateway-client.js';
 import { startPaymentPoller } from './payments/poller.js';
 import { attachLiveStatus } from './ws/live-status.js';
-import { unconfiguredMailer } from './auth/mailer.js';
+import { mailerFromConfig } from './email/index.js';
 
 try {
   const applied = runMigrations();
@@ -18,7 +18,8 @@ try {
 }
 
 const gateway = createGatewayClient({ baseUrl: config.gateway.url, token: config.gateway.token });
-const app = createApp({ gateway });
+const mailer = mailerFromConfig();
+const app = createApp({ gateway, mailer });
 
 const server = createServer(app);
 attachLiveStatus(server);
@@ -27,4 +28,4 @@ server.listen(config.port, '0.0.0.0', () => {
   logger.info('app listening', { port: config.port, version: config.version });
 });
 
-startPaymentPoller({ gateway, mailer: unconfiguredMailer });
+startPaymentPoller({ gateway, mailer });

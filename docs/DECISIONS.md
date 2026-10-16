@@ -76,6 +76,13 @@ Each entry records a choice, its reason, and what it rules out.
 - **Sandbox banner:** the page asks `GET /api/config`, which reports `sandbox` from `RAPYD_SANDBOX`. If the config cannot be read, the banner stays hidden.
 - **Layout:** one column, 16 px side margins, fluid width, colors as tokens with dark mode. Checked in headless Edge at 360 px wide: no horizontal overflow on the four pages.
 
+## 013 — Email: templates in files, logs without secrets
+
+- **Transport:** nodemailer over SMTP. In development the app sends to the mail catcher service inside the Docker network (`SMTP_HOST=mailcatcher`), so no real inbox receives mail. If `SMTP_HOST` is empty, every send fails with 503 `email_not_configured`.
+- **Templates:** one plain-text and one HTML file per email type, in `backend/src/email/templates/`. HTML values are escaped; plain-text values are not. A placeholder with no value is an error, not an empty string.
+- **Failures:** a failed send becomes `email_failed` (503), so sign-in gives a clear message and no partial state is left. A failed sender notification after a claim completes is logged and does not undo the claim.
+- **Logs:** an email is logged with its type and a keyed reference to the recipient (HMAC, first 12 characters). The address, the code, and the link never appear. Transport errors are logged by code only, because some messages include the address.
+
 ## 012 — Claims: link first, then the code, then one transfer
 
 - **Issuing:** a claim link is created only after its email is sent. If the email fails, the claim is removed and the payment stays `paid`, to be retried every minute. This means a stored claim always has a link that reached the recipient.

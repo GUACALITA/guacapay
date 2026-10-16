@@ -2,8 +2,12 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16. Backend 112/112 automated tests pass (7 new email tests). Checked with a real Mailpit container on a private network: the login email arrived with the right subject, recipient and six-digit code, and the logs show only the type and a recipient reference. With the mail server stopped, sign-in returns 503 `email_failed`.
+**Files produced:** `backend/src/email/{render,send,index}.js`, `backend/src/email/templates/{login-code,claim-link,payment-confirmation}.{txt,html}`, `backend/test/email.test.js`; edited `backend/src/config.js` (`smtp`), `backend/src/auth/mailer.js` (`sendPaymentConfirmation`), `backend/src/claims/service.js` (amount in claim email, sender confirmation), `backend/src/claims/routes.js`, `backend/src/server.js` (real mailer), `frontend/js/messages.js` (`email_failed`), `docker/docker-compose.yml` (SMTP to the mail catcher), `.env.example` (`SMTP_FROM`), `docs/DECISIONS.md` (decision 013), `backend/package.json` (nodemailer)
+
+**Notes:**
+- The mail catcher in the compose file (Mailpit) receives mail on port 1025 inside the network; its web view is on 8026 as specified.
+- The sign-in code is now delivered. Sign-in can be completed end to end in development, and the claim email is sent when a payment is paid.
 
 ## Prompt
 

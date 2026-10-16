@@ -1,0 +1,11 @@
+You have money waiting on guacapay
+
+Amount: {{amount}}
+
+Open this link to claim it:
+
+{{link}}
+
+The link works once and expires in 7 days. You will confirm your email with a code, then choose where the money goes.
+
+If you were not expecting this, you can ignore this email.

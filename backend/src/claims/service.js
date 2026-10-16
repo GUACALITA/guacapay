@@ -17,6 +17,10 @@ export const CLAIM_STATUS = Object.freeze({ OPEN: 'open', CLAIMING: 'claiming', 
 
 const iso = (ms) => new Date(ms).toISOString();
 
+function formatAmount(cents, currency) {
+  return `${(cents / 100).toFixed(2)} ${currency}`;
+}
+
 export function newClaimToken() {
   return randomBytes(32).toString('base64url');
 }
@@ -80,7 +84,9 @@ export async function issueClaim(paymentId, { mailer, db = getDb(), now = Date.n
   }
 
   try {
-    await mailer.sendClaimLink(payment.recipient_email, claimLink(token));
+    await mailer.sendClaimLink(payment.recipient_email, claimLink(token), {
+      amountText: formatAmount(payment.amount_cents, payment.currency),
+    });
   } catch (err) {
     db.prepare('DELETE FROM claims WHERE payment_id = ?').run(paymentId);
     logger.warn('claim link not sent', { paymentId, reason: err.code ?? 'send_failed' });
@@ -142,7 +148,7 @@ export function validateDestination(raw) {
 
 // Step 2 of claiming: checks the code and destination, then runs the transfer once.
 // Outcomes: completed, or failed (the transfer was attempted and did not go through).
-export async function confirmClaim({ token, code, destination, transfer, db = getDb(), now = Date.now() }) {
+export async function confirmClaim({ token, code, destination, transfer, mailer, db = getDb(), now = Date.now() }) {
   const claim = findClaimByToken(token, db);
   assertUsable(claim, now);
 
@@ -201,5 +207,21 @@ export async function confirmClaim({ token, code, destination, transfer, db = ge
     transitionPayment(payment.id, STATUS.CLAIMED, { db });
     transitionPayment(payment.id, STATUS.COMPLETED, { db });
   })();
+
+  await notifySender(payment, { db, mailer });
   return { status: STATUS.COMPLETED };
+}
+
+// The payment is already completed, so a failed notification is logged and does not undo anything.
+async function notifySender(payment, { db, mailer }) {
+  if (!mailer) return;
+  try {
+    const sender = db.prepare('SELECT email FROM users WHERE id = ?').get(payment.sender_id);
+    await mailer.sendPaymentConfirmation(sender.email, {
+      amountText: formatAmount(payment.amount_cents, payment.currency),
+      recipientEmail: payment.recipient_email,
+    });
+  } catch (err) {
+    logger.warn('payment confirmation not sent', { paymentId: payment.id, reason: err.code ?? 'unknown' });
+  }
 }

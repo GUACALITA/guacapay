@@ -43,6 +43,7 @@ export function createClaimsRouter({ mailer = unconfiguredMailer, transfer = unc
         code: body.code,
         destination: body.destinationWalletAddress,
         transfer,
+        mailer,
       });
       res.json({ status: result.status });
     }),

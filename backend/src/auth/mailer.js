@@ -11,4 +11,7 @@ export const unconfiguredMailer = {
   async sendClaimLink() {
     throw notConfigured();
   },
+  async sendPaymentConfirmation() {
+    throw notConfigured();
+  },
 };

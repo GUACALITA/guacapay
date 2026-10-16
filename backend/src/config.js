@@ -99,6 +99,13 @@ export const config = {
   claims: {
     walletHosts: claimWalletHosts,
   },
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: readInteger('SMTP_PORT', 1025, { min: 1, max: 65535 }),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || 'guacapay <no-reply@guacapay.local>',
+  },
   // Values of secret-like variables, used by the logger to mask them in output.
   // Short values are skipped: they would mask ordinary words.
   secretValues: Object.entries(process.env)

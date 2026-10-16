@@ -16,6 +16,9 @@ services:
       DATABASE_PATH: /app/data/guacapay.db
       # Inside the Docker network the gateway is reached by service name.
       GATEWAY_URL: http://gateway:3203
+      # Development: email goes to the local mail catcher, never to a real inbox.
+      SMTP_HOST: mailcatcher
+      SMTP_PORT: "1025"
     ports:
       - "${APP_PORT:-3202}:3202"
     volumes:
