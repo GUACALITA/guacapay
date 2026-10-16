@@ -18,6 +18,8 @@ process.env.DATABASE_PATH = join(tempDir, 'test.db');
 process.env.PAYMENT_MIN_CENTS = '100';
 process.env.PAYMENT_MAX_CENTS = '1000000';
 process.env.PAYMENT_CURRENCIES = 'USD';
+process.env.BASE_URL = 'http://localhost:3202';
+process.env.RETURN_BASE_URL = 'https://return.guacapay.test';
 
 const { getDb, closeDb } = await import('../src/db.js');
 const { runMigrations } = await import('../src/migrate.js');
@@ -70,7 +72,7 @@ function gatewayStub(statusByCheckout = {}) {
       return { checkoutId, status: statusByCheckout[checkoutId] ?? 'pending', providerStatus: 'NEW' };
     },
     async createCheckout(input) {
-      calls.push(['createCheckout', input.paymentId]);
+      calls.push(['createCheckout', input.paymentId, input.returnUrl]);
       return { checkoutId: 'checkout_new1', redirectUrl: 'https://sandboxcheckout.rapyd.net/new1', status: 'pending' };
     },
   };
@@ -251,6 +253,10 @@ test('starting a checkout attaches it and moves the payment to awaiting_payment'
     const started = await request(base, 'POST', `/api/payments/${payment.id}/checkout`, { token: alice.token });
     assert.equal(started.status, 200);
     assert.equal(started.body.redirectUrl, 'https://sandboxcheckout.rapyd.net/new1');
+
+    // Rapyd gets the public return address; email links elsewhere keep using BASE_URL (localhost).
+    const sent = gateway.calls.find((call) => call[0] === 'createCheckout');
+    assert.ok(sent[2].startsWith('https://return.guacapay.test/payment.html?id='), sent[2]);
 
     const row = getDb().prepare('SELECT status, rapyd_checkout_id FROM payments WHERE id = ?').get(payment.id);
     assert.equal(row.status, 'awaiting_payment');

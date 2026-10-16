@@ -56,7 +56,7 @@ export function createPaymentsRouter({ gateway = null } = {}) {
       if (!gateway) {
         throw new AppError('gateway_not_configured', 503, 'Payment service is not configured.');
       }
-      const returnUrl = `${config.baseUrl}/payment.html?id=${encodeURIComponent(req.params.id)}`;
+      const returnUrl = `${config.returnBaseUrl}/payment.html?id=${encodeURIComponent(req.params.id)}`;
       const { redirectUrl } = await startCheckout({
         paymentId: req.params.id,
         userId: req.user.id,

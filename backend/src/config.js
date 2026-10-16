@@ -83,7 +83,10 @@ export const config = {
   port,
   frontendDir: join(here, '..', '..', 'frontend'),
   databasePath: process.env.DATABASE_PATH || join(here, '..', 'data', 'guacapay.db'),
+  // Used for links in emails (claim links). Local by default.
   baseUrl: (process.env.BASE_URL || 'http://localhost:3202').replace(/\/+$/, ''),
+  // Used only for the return address Rapyd sends the payer back to. Rapyd rejects localhost here.
+  returnBaseUrl: (process.env.RETURN_BASE_URL || process.env.BASE_URL || 'http://localhost:3202').replace(/\/+$/, ''),
   sandbox,
   jwtSecret: process.env.JWT_SECRET,
   hmacSecret: process.env.HMAC_SECRET,
