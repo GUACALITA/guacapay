@@ -107,7 +107,8 @@ Rapyd must reach your computer to report payments, and Rapyd does not accept `lo
 
 The simplest option is a tunnel tool such as Cloudflare Tunnel (`cloudflared`) or ngrok. Point the tunnel to your computer's port `3202` for the app, and to `3203` for the gateway. Then:
 
-- Set `BASE_URL` to the public address of the app, for example `https://your-tunnel-name.example.com`.
+- Keep `BASE_URL=http://localhost:3202`. It is used for claim links in emails, which are read on your own machine.
+- Set `RETURN_BASE_URL` to the public address of the app, for example `https://your-tunnel-name.example.com`. Rapyd sends the payer back to it after paying. Rapyd rejects `localhost` here.
 - Set `RAPYD_WEBHOOK_URL` to the public address of the gateway plus `/webhooks/rapyd`. The gateway listens on port `3203`, so the tunnel must reach that port. For example `https://your-gateway-tunnel.example.com/webhooks/rapyd`.
 - In the Rapyd sandbox dashboard, configure the same webhook URL.
 
