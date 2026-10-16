@@ -2,8 +2,15 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** partially executed 2026-10-16, **blocked** at step 1. Two of four questions answered (provider and URL, registration steps). Missing: wallet address URL format and sender/receiver wallets (needs your accounts), testnet limits (not documented). No code written, as the prompt requires.
-**Files produced:** `docs/OPEN_PAYMENTS.md`
+**Status:** partially executed 2026-10-16, **blocked** at step 1 on two items. Confirmed: provider and sign-up URL, registration steps, the sender wallet (`https://ilp.interledger-test.dev/<id>` format, live, asset EUR), and its key ID and private key. Still missing: a receiver wallet URL, and testnet limits (not documented). No code written, as the prompt requires.
+**Files produced:** `docs/OPEN_PAYMENTS.md`, `.env` (git-ignored; app secrets generated for guacapay, sandbox Rapyd keys and the wallet values), `C:\Users\guacalita-ceo-jlgb\guacapay-secrets\ilp-testnet-private.key` (outside the repo)
+
+**Variables for this step** (names only; values are in `.env`):
+- `OPEN_PAYMENTS_WALLET_ADDRESS`: sender wallet URL
+- `OPEN_PAYMENTS_KEY_ID`: key ID
+- `OPEN_PAYMENTS_PRIVATE_KEY_PATH`: path to the Ed25519 key file, outside the repo
+
+**Open for step 2:** a receiver wallet URL. Its address goes in the test script only.
 
 ## Prompt
 
