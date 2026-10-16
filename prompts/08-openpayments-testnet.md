@@ -2,8 +2,8 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** partially executed 2026-10-16, **blocked** at step 1. Two of four questions answered (provider and URL, registration steps). Missing: wallet address URL format and sender/receiver wallets (needs your accounts), testnet limits (not documented). No code written, as the prompt requires.
+**Files produced:** `docs/OPEN_PAYMENTS.md`
 
 ## Prompt
 
