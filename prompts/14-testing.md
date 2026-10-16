@@ -2,8 +2,13 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16. Backend 114/114 and gateway 29/29 pass, both with networking disabled. A deliberately broken transition rule made a test fail, and the file was restored. The manual sandbox check passed all 5 steps against real Rapyd sandbox and the testnet wallet.
+**Files produced:** `backend/test/integration.test.js` (2 end-to-end tests), `backend/scripts/sandbox-check.js`, `docs/TESTING.md`; edited `backend/package.json` (`test:sandbox`), `docs/DECISIONS.md` (decision 014)
+
+**Results to keep in mind:**
+- The sandbox check created one checkout, `checkout_14a2d8e4f2d279170778e0ebcae53da7`. It is unpaid and will expire on its own.
+- Rapyd accepted the request signature and the checkout body. This was the main unverified point until now. Still unverified: the webhook signature encoding, which needs a real webhook.
+- The sandbox check used `https://guacapay.example.com` as the return URL, a placeholder. Replace it with the real public address before any real payment test.
 
 ## Prompt
 

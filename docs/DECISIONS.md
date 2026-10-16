@@ -76,6 +76,13 @@ Each entry records a choice, its reason, and what it rules out.
 - **Sandbox banner:** the page asks `GET /api/config`, which reports `sandbox` from `RAPYD_SANDBOX`. If the config cannot be read, the banner stays hidden.
 - **Layout:** one column, 16 px side margins, fluid width, colors as tokens with dark mode. Checked in headless Edge at 360 px wide: no horizontal overflow on the four pages.
 
+## 014 — Testing: built-in runner, fakes for every outside service
+
+- **Runner:** Node's built-in test runner (`node --test`). No test framework is added.
+- **No network in automated tests:** Rapyd, the gateway, email, and transfers are fakes. The database is a temporary file. The suite passes with networking disabled.
+- **Manual sandbox check:** `backend/scripts/sandbox-check.js` calls the real gateway and Rapyd sandbox. It is kept out of `npm test` so that a normal test run never creates a real checkout.
+- **Rule proof:** a broken transition rule must make a test fail, and that check is run whenever the state rules change.
+
 ## 013 — Email: templates in files, logs without secrets
 
 - **Transport:** nodemailer over SMTP. In development the app sends to the mail catcher service inside the Docker network (`SMTP_HOST=mailcatcher`), so no real inbox receives mail. If `SMTP_HOST` is empty, every send fails with 503 `email_not_configured`.
