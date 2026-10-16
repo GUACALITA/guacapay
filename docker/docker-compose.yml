@@ -14,6 +14,8 @@ services:
       # Fixed container values. They take precedence over .env so the mappings below stay valid.
       APP_PORT: "3202"
       DATABASE_PATH: /app/data/guacapay.db
+      # Inside the Docker network the gateway is reached by service name.
+      GATEWAY_URL: http://gateway:3203
     ports:
       - "${APP_PORT:-3202}:3202"
     volumes:
@@ -42,6 +44,8 @@ services:
     environment:
       # Fixed container port. Takes precedence over .env so the host mapping below stays valid.
       GATEWAY_PORT: "3203"
+      # Inside the Docker network the app is reached by service name.
+      APP_URL: http://app:3202
     # Bound to localhost only. The gateway also requires GATEWAY_TOKEN on checkout routes.
     ports:
       - "127.0.0.1:${GATEWAY_PORT:-3203}:3203"

@@ -37,9 +37,25 @@ function readPort(name, fallback) {
   return value;
 }
 
+function readHttpUrl(name, fallback) {
+  const raw = process.env[name] || fallback;
+  try {
+    const url = new URL(raw);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return url.toString().replace(/\/+$/, '');
+    }
+  } catch {
+    // Reported below.
+  }
+  problems.push(`${name} must be an absolute http or https URL`);
+  return fallback;
+}
+
 const accessKey = requireValue('RAPYD_ACCESS_KEY');
 const secretKey = requireValue('RAPYD_SECRET_KEY');
 const gatewayToken = requireValue('GATEWAY_TOKEN', MIN_TOKEN_LENGTH);
+const webhookUrl = readHttpUrl('RAPYD_WEBHOOK_URL');
+const appUrl = readHttpUrl('APP_URL', 'http://localhost:3202');
 const sandbox = readBoolean('RAPYD_SANDBOX', true);
 const port = readPort('GATEWAY_PORT', 3203);
 
@@ -58,11 +74,13 @@ if (problems.length > 0) {
 export const config = {
   port,
   gatewayToken,
+  appUrl,
   rapyd: {
     sandbox,
     baseUrl: sandbox ? 'https://sandboxapi.rapyd.net' : 'https://api.rapyd.net',
     accessKey,
     secretKey,
     country,
+    webhookUrl,
   },
 };

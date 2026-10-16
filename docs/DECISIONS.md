@@ -49,7 +49,17 @@ Each entry records a choice, its reason, and what it rules out.
 - **Access:** checkout routes require `GATEWAY_TOKEN`, compared in constant time. The gateway port is bound to 127.0.0.1 in compose.
 - **Sandbox:** `RAPYD_SANDBOX=true` (default) uses `sandboxapi.rapyd.net`. Rapyd does not accept localhost return URLs, so real checkout tests need a public URL.
 
-## 008 — The database is opened in one module
+## 008 — Webhooks confirm payments with a status request, never by trusting the event
+
+- **Flow:** Rapyd calls the gateway. The gateway verifies the signature on the raw body, acknowledges with 200, and forwards a small event (`eventId`, `type`, `paymentReference`, `providerPaymentId`) to the app. The app then asks the gateway for the checkout status and applies only what Rapyd's status request confirms.
+- **Why:** the webhook body is signed, but the app still checks the status with Rapyd, so a wrong or replayed event cannot move money state on its own.
+- **Matching:** the event is matched to a payment by `merchant_reference_id`, which the gateway sets to the payment ID when it creates the checkout. The documentation does not say that Rapyd copies this field into the payment event, so polling is the fallback when it does not.
+- **Duplicates:** each applied event ID is stored in `processed_events` in the same transaction as the state change. A payment that is no longer `awaiting_payment` is never changed by a later event.
+- **Polling:** every 60 seconds, payments waiting for two minutes are checked with the checkout status. This covers lost webhooks.
+- **Signature:** the webhook formula is `base64(HMAC-SHA256(url + salt + timestamp + access_key + secret_key + body))`, with the full URL configured in Rapyd (`RAPYD_WEBHOOK_URL`). The documentation does not say whether the HMAC is base64-encoded directly or as hex text, so both are accepted until a real sandbox webhook confirms which one Rapyd sends. No timestamp window is enforced, because Rapyd can resend old events.
+- **Shared token:** the gateway and the app use `GATEWAY_TOKEN` in both directions. The gateway does not need `HMAC_SECRET`, which protects stored codes.
+
+## 009 — The database is opened in one module
 
 - **Decision:** only `backend/src/db.js` opens the connection. Startup runs pending migrations.
 - **Reason:** one place to change connection settings, and one place to close it in tests.

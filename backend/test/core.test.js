@@ -18,6 +18,7 @@ function baseEnv(overrides = {}) {
     ...env,
     JWT_SECRET: PLACEHOLDER_SECRET,
     HMAC_SECRET: PLACEHOLDER_SECRET,
+    GATEWAY_TOKEN: PLACEHOLDER_SECRET,
     ...overrides,
   };
 }

@@ -2,8 +2,13 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16. Gateway 29/29 and backend 40/40 automated tests pass. Two containers checked: a signed webhook gets 200 and reaches the app; a forged one gets 401. Not yet checked against a real Rapyd webhook.
+**Files produced:** `gateway/src/{forward,config,app,server}.js`, `gateway/src/providers/rapyd.js` (webhook functions), `gateway/test/webhooks.test.js`; `backend/migrations/003-processed-events.sql`, `backend/src/{gateway-client,config,app,server}.js`, `backend/src/auth/gateway-token.js`, `backend/src/payments/{checkout,reconcile,poller,routes}.js`, `backend/test/reconcile.test.js`; updated the earlier backend tests (gateway token in env, migration list); `docker/docker-compose.yml` (service URLs); `.env.example`; `docs/DECISIONS.md` (decision 008)
+
+**Deviations from the prompt, all recorded in decision 008:**
+- The shared secret is `GATEWAY_TOKEN`, not `HMAC_SECRET`, so the gateway never holds the secret that protects stored codes.
+- Events are matched by `merchant_reference_id`, and the status always comes from a checkout status request.
+- `POST /api/payments/:id/checkout` was added here, because the flow cannot be tested without it. It was planned for prompt 11.
 
 ## Prompt
 

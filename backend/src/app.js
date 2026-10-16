@@ -7,8 +7,33 @@ import { AppError } from './errors.js';
 import { createAuthRouter } from './auth/routes.js';
 import { unconfiguredMailer } from './auth/mailer.js';
 import { createPaymentsRouter } from './payments/routes.js';
+import { handleProviderEvent } from './payments/reconcile.js';
+import { requireGatewayToken } from './auth/gateway-token.js';
 
-export function createApp({ mailer = unconfiguredMailer } = {}) {
+// Turns an async handler's rejection into a call to next(err).
+const route = (handler) => (req, res, next) => {
+  Promise.resolve()
+    .then(() => handler(req, res))
+    .catch(next);
+};
+
+// Only the fields the gateway forwards are read; anything else is ignored.
+function parseInternalEvent(body) {
+  const event = body ?? {};
+  if (typeof event.eventId !== 'string' || event.eventId.length === 0 || event.eventId.length > 100) {
+    throw new AppError('invalid_event', 400, 'Event is missing its ID.');
+  }
+  if (typeof event.type !== 'string') {
+    throw new AppError('invalid_event', 400, 'Event is missing its type.');
+  }
+  return {
+    eventId: event.eventId,
+    type: event.type,
+    paymentReference: typeof event.paymentReference === 'string' && event.paymentReference ? event.paymentReference : null,
+  };
+}
+
+export function createApp({ mailer = unconfiguredMailer, gateway = null, gatewayToken = config.gateway.token } = {}) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -31,7 +56,21 @@ export function createApp({ mailer = unconfiguredMailer } = {}) {
   });
 
   app.use('/api/auth', createAuthRouter({ mailer }));
-  app.use('/api/payments', createPaymentsRouter());
+  app.use('/api/payments', createPaymentsRouter({ gateway }));
+
+  // Called only by the gateway, with the shared token. Always answers 200 for a well-formed event,
+  // including unknown or already-applied ones, so the gateway does not keep retrying.
+  app.post(
+    '/internal/payment-events',
+    requireGatewayToken(gatewayToken),
+    route(async (req, res) => {
+      if (!gateway) {
+        throw new AppError('gateway_not_configured', 503, 'Payment service is not configured.');
+      }
+      const result = await handleProviderEvent(parseInternalEvent(req.body), { gateway });
+      res.json(result);
+    }),
+  );
 
   // Any route not matched above.
   app.use((req, res, next) => {

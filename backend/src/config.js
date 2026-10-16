@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8'));
 
-const REQUIRED_SECRETS = ['JWT_SECRET', 'HMAC_SECRET'];
+const REQUIRED_SECRETS = ['JWT_SECRET', 'HMAC_SECRET', 'GATEWAY_TOKEN'];
 const MIN_SECRET_LENGTH = 32;
 const SECRET_NAME_PATTERN = /KEY|SECRET|PASS|TOKEN/i;
 
@@ -65,8 +65,13 @@ export const config = {
   port,
   frontendDir: join(here, '..', '..', 'frontend'),
   databasePath: process.env.DATABASE_PATH || join(here, '..', 'data', 'guacapay.db'),
+  baseUrl: (process.env.BASE_URL || 'http://localhost:3202').replace(/\/+$/, ''),
   jwtSecret: process.env.JWT_SECRET,
   hmacSecret: process.env.HMAC_SECRET,
+  gateway: {
+    url: (process.env.GATEWAY_URL || 'http://localhost:3203').replace(/\/+$/, ''),
+    token: process.env.GATEWAY_TOKEN,
+  },
   payments: {
     minAmountCents,
     maxAmountCents,

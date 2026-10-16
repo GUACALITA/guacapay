@@ -1,7 +1,7 @@
 // The only module that knows Rapyd field names, URLs, and request signing.
 // Reference: https://docs.rapyd.net/en/request-signatures.html and
 // https://docs.rapyd.net/en/create-checkout-page.html, https://docs.rapyd.net/en/retrieve-checkout-page.html
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { AppError } from '../errors.js';
 
 const CHECKOUT_PATH = '/v1/checkout';
@@ -26,6 +26,59 @@ export function signRequest({ method, urlPath, salt, timestamp, accessKey, secre
   const toSign = `${method.toLowerCase()}${urlPath}${salt}${timestamp}${accessKey}${secretKey}${bodyString}`;
   const hex = createHmac('sha256', secretKey).update(toSign).digest('hex');
   return Buffer.from(hex).toString('base64');
+}
+
+// Webhook signature: same formula as requests, but the URL is the webhook URL configured in Rapyd.
+// Rapyd documents BASE64(HMAC-SHA256(...)); the request samples base64-encode the hex digest.
+// Both encodings are accepted until a sandbox webhook confirms which one Rapyd sends.
+export function webhookSignatureCandidates({ url, salt, timestamp, accessKey, secretKey, bodyString }) {
+  const hex = createHmac('sha256', secretKey)
+    .update(`${url}${salt}${timestamp}${accessKey}${secretKey}${bodyString}`)
+    .digest('hex');
+  return [Buffer.from(hex).toString('base64'), Buffer.from(hex, 'hex').toString('base64')];
+}
+
+// Turns a raw webhook body into the fields the rest of the system needs. Only these fields are used.
+export function parseWebhookEvent(bodyString) {
+  let body;
+  try {
+    body = JSON.parse(bodyString);
+  } catch {
+    throw new AppError('invalid_webhook', 400, 'Webhook body is not JSON.');
+  }
+
+  if (typeof body?.id !== 'string' || typeof body?.type !== 'string') {
+    throw new AppError('invalid_webhook', 400, 'Webhook is missing its ID or type.');
+  }
+
+  const data = body.data ?? {};
+  const reference = typeof data.merchant_reference_id === 'string' ? data.merchant_reference_id : '';
+
+  return {
+    eventId: body.id,
+    type: body.type,
+    paymentReference: reference || null,
+    providerPaymentId: typeof data.id === 'string' ? data.id : null,
+  };
+}
+
+// Returns the checks the gateway route uses: verify(headers, bodyString) and parse(bodyString).
+export function createRapydWebhooks({ url, accessKey, secretKey }) {
+  return {
+    verify(headers, bodyString) {
+      const { salt, timestamp, signature } = headers;
+      if (!salt || !timestamp || !signature) return false;
+
+      const received = Buffer.from(String(signature));
+      return webhookSignatureCandidates({ url, salt, timestamp, accessKey, secretKey, bodyString }).some(
+        (candidate) => {
+          const expected = Buffer.from(candidate);
+          return expected.length === received.length && timingSafeEqual(expected, received);
+        },
+      );
+    },
+    parse: parseWebhookEvent,
+  };
 }
 
 export function createRapydClient({

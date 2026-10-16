@@ -12,6 +12,7 @@ const tempDir = mkdtempSync(join(tmpdir(), 'guacapay-db-'));
 // Set environment before importing modules that read config.
 process.env.JWT_SECRET = PLACEHOLDER_SECRET;
 process.env.HMAC_SECRET = PLACEHOLDER_SECRET;
+process.env.GATEWAY_TOKEN = PLACEHOLDER_SECRET;
 process.env.DATABASE_PATH = join(tempDir, 'test.db');
 
 const { getDb, closeDb } = await import('../src/db.js');
@@ -27,7 +28,11 @@ after(() => {
 });
 
 test('migrations apply once and are not re-applied', () => {
-  assert.deepEqual(firstRun, ['001-initial.sql', '002-payments-message-idempotency.sql']);
+  assert.deepEqual(firstRun, [
+    '001-initial.sql',
+    '002-payments-message-idempotency.sql',
+    '003-processed-events.sql',
+  ]);
   assert.deepEqual(runMigrations(getDb()), []);
 
   const recorded = getDb().prepare('SELECT name FROM schema_migrations ORDER BY name').all();

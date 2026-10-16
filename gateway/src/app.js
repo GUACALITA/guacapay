@@ -61,7 +61,7 @@ export function parseCheckoutInput(body) {
   };
 }
 
-export function createGatewayApp({ rapyd, gatewayToken, version = 'dev' }) {
+export function createGatewayApp({ rapyd, gatewayToken, webhooks, forward, version = 'dev' }) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -73,6 +73,34 @@ export function createGatewayApp({ rapyd, gatewayToken, version = 'dev' }) {
       logger.info('request', { requestId: req.id, method: req.method, path: req.path, status: res.statusCode });
     });
     next();
+  });
+
+  // Must come before express.json, which would consume the body that the signature covers.
+  app.post('/webhooks/rapyd', express.raw({ type: '*/*', limit: '256kb' }), (req, res, next) => {
+    try {
+      const bodyString = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
+
+      if (!webhooks.verify(req.headers, bodyString)) {
+        logger.warn('webhook rejected', { requestId: req.id, reason: 'bad_signature' });
+        res.status(401).json({
+          error: { code: 'invalid_signature', message: 'Webhook signature is not valid.', requestId: req.id },
+        });
+        return;
+      }
+
+      const event = webhooks.parse(bodyString);
+      logger.info('webhook accepted', { requestId: req.id, eventId: event.eventId, type: event.type });
+
+      // Acknowledge first, so Rapyd does not retry while we forward.
+      res.status(200).json({ received: true });
+      setImmediate(() => {
+        forward(event).catch((err) => {
+          logger.error('forward failed', { requestId: req.id, eventId: event.eventId, error: err.message });
+        });
+      });
+    } catch (err) {
+      next(err);
+    }
   });
 
   app.use(express.json({ limit: '20kb' }));

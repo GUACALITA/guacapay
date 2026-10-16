@@ -12,6 +12,7 @@ const tempDir = mkdtempSync(join(tmpdir(), 'guacapay-payments-'));
 
 process.env.JWT_SECRET = PLACEHOLDER_SECRET;
 process.env.HMAC_SECRET = PLACEHOLDER_SECRET;
+process.env.GATEWAY_TOKEN = PLACEHOLDER_SECRET;
 process.env.DATABASE_PATH = join(tempDir, 'test.db');
 process.env.PAYMENT_MIN_CENTS = '100';
 process.env.PAYMENT_MAX_CENTS = '1000000';

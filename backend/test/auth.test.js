@@ -12,6 +12,7 @@ const tempDir = mkdtempSync(join(tmpdir(), 'guacapay-auth-'));
 
 process.env.JWT_SECRET = PLACEHOLDER_SECRET;
 process.env.HMAC_SECRET = PLACEHOLDER_SECRET;
+process.env.GATEWAY_TOKEN = PLACEHOLDER_SECRET;
 process.env.DATABASE_PATH = join(tempDir, 'test.db');
 
 const { getDb, closeDb } = await import('../src/db.js');

@@ -1,5 +1,7 @@
 // HTTP routes for payments: /api/payments. Every route requires a signed-in user.
 import { Router } from 'express';
+import { config } from '../config.js';
+import { AppError } from '../errors.js';
 import { requireAuth } from '../auth/middleware.js';
 import {
   createPayment,
@@ -7,6 +9,7 @@ import {
   listPaymentsForUser,
   toPublicPayment,
 } from './service.js';
+import { startCheckout } from './checkout.js';
 
 // Express 4 does not forward errors thrown inside async handlers; this does.
 const route = (handler) => (req, res, next) => {
@@ -15,7 +18,7 @@ const route = (handler) => (req, res, next) => {
     .catch(next);
 };
 
-export function createPaymentsRouter() {
+export function createPaymentsRouter({ gateway = null } = {}) {
   const router = Router();
 
   router.use(requireAuth);
@@ -43,6 +46,24 @@ export function createPaymentsRouter() {
     '/:id',
     route((req, res) => {
       res.json(toPublicPayment(getPaymentForUser(req.params.id, req.user.id)));
+    }),
+  );
+
+  // Starts the Rapyd checkout for a created payment and returns where to send the payer.
+  router.post(
+    '/:id/checkout',
+    route(async (req, res) => {
+      if (!gateway) {
+        throw new AppError('gateway_not_configured', 503, 'Payment service is not configured.');
+      }
+      const returnUrl = `${config.baseUrl}/payment.html?id=${encodeURIComponent(req.params.id)}`;
+      const { redirectUrl } = await startCheckout({
+        paymentId: req.params.id,
+        userId: req.user.id,
+        gateway,
+        returnUrl,
+      });
+      res.json({ redirectUrl });
     }),
   );
 
