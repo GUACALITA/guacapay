@@ -10,6 +10,10 @@ import {
   toPublicPayment,
 } from './service.js';
 import { startCheckout } from './checkout.js';
+import { payWithBalance } from '../balance/pay.js';
+import { issueClaim } from '../claims/service.js';
+import { unconfiguredMailer } from '../auth/mailer.js';
+import { logger } from '../logger.js';
 
 // Express 4 does not forward errors thrown inside async handlers; this does.
 const route = (handler) => (req, res, next) => {
@@ -18,10 +22,36 @@ const route = (handler) => (req, res, next) => {
     .catch(next);
 };
 
-export function createPaymentsRouter({ gateway = null } = {}) {
+export function createPaymentsRouter({ gateway = null, mailer = unconfiguredMailer } = {}) {
   const router = Router();
 
   router.use(requireAuth);
+
+  // Pays with the sender's app balance. Fails with insufficient_balance when it is not enough.
+  router.post(
+    '/:id/pay-with-balance',
+    route(async (req, res) => {
+      const paymentId = payWithBalance({ paymentId: req.params.id, userId: req.user.id });
+      try {
+        await issueClaim(paymentId, { mailer });
+      } catch (err) {
+        logger.warn('claim issue after balance payment failed', { paymentId, error: err.message });
+      }
+      res.json({ status: 'paid' });
+    }),
+  );
+
+  // Paying with testnet balance needs the Open Payments transfer, which is not connected yet.
+  router.post(
+    '/:id/pay-with-testnet',
+    route(() => {
+      throw new AppError(
+        'testnet_not_connected',
+        503,
+        'Paying with testnet balance is not connected yet. Pay with Rapyd or use your app balance.',
+      );
+    }),
+  );
 
   router.post(
     '/',

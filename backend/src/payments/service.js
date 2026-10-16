@@ -94,7 +94,7 @@ function recordEvent(db, paymentId, from, to) {
 }
 
 // Returns { payment, created }. A repeated request with the same key returns the first payment.
-export function createPayment({ senderId, body, idempotencyKey, db = getDb() }) {
+export function createPayment({ senderId, body, idempotencyKey, purpose = 'transfer', db = getDb() }) {
   const input = parseNewPayment(body);
   const key = parseIdempotencyKey(idempotencyKey);
 
@@ -119,8 +119,8 @@ export function createPayment({ senderId, body, idempotencyKey, db = getDb() }) 
     const now = isoNow();
     db.prepare(
       `INSERT INTO payments (id, sender_id, recipient_email, amount_cents, currency, status, message,
-         idempotency_key, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         idempotency_key, created_at, updated_at, purpose)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       id,
       senderId,
@@ -132,6 +132,7 @@ export function createPayment({ senderId, body, idempotencyKey, db = getDb() }) 
       key,
       now,
       now,
+      purpose,
     );
     recordEvent(db, id, null, STATUS.CREATED);
 

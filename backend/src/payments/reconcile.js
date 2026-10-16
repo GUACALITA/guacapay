@@ -4,6 +4,7 @@ import { getDb } from '../db.js';
 import { logger } from '../logger.js';
 import { STATUS } from './states.js';
 import { transitionPayment } from './service.js';
+import { credit } from '../balance/service.js';
 
 const POLL_OLDER_THAN_MS = 2 * 60 * 1000;
 const POLL_BATCH_SIZE = 50;
@@ -27,9 +28,19 @@ export function applyProviderStatus(paymentId, providerStatus, { db = getDb() } 
   if (!target) return false;
 
   return db.transaction(() => {
-    const row = db.prepare('SELECT status FROM payments WHERE id = ?').get(paymentId);
+    const row = db
+      .prepare('SELECT status, purpose, sender_id, currency, amount_cents FROM payments WHERE id = ?')
+      .get(paymentId);
     if (!row || row.status !== STATUS.AWAITING_PAYMENT) return false;
     transitionPayment(paymentId, target, { db });
+
+    // A recharge credits the sender's app balance. It has no recipient, so it ends here.
+    if (target === STATUS.PAID && row.purpose === 'recharge') {
+      credit(row.sender_id, row.currency, row.amount_cents, 'recharge', paymentId, { db });
+      transitionPayment(paymentId, STATUS.CLAIMABLE, { db });
+      transitionPayment(paymentId, STATUS.CLAIMED, { db });
+      transitionPayment(paymentId, STATUS.COMPLETED, { db });
+    }
     return true;
   })();
 }
