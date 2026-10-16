@@ -2,8 +2,8 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16. All seven checks pass or are not applicable yet; two have open points (see the report). Backend 117/117, gateway 29/29. Audit: 0 vulnerabilities in production dependencies, after one high-severity fix.
+**Files produced:** `docs/SECURITY_REVIEW.md`, `backend/test/security.test.js`, `.dockerignore`; edited `backend/src/app.js` (security headers), `gateway/src/app.js` (headers), `docker/app.Dockerfile` and `docker/gateway.Dockerfile` (non-root user), `backend/package.json` (nodemailer 10.1.2)
 
 ## Prompt
 

@@ -35,6 +35,17 @@ function parseInternalEvent(body) {
   };
 }
 
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "form-action 'self'",
+  "base-uri 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+
 export function createApp({
   mailer = unconfiguredMailer,
   gateway = null,
@@ -52,6 +63,15 @@ export function createApp({
     res.on('finish', () => {
       logger.info('request', { requestId: req.id, method: req.method, path: req.path, status: res.statusCode });
     });
+    next();
+  });
+
+  // Security headers. The page scripts are external files, so the policy allows only same-origin resources.
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Content-Security-Policy', CONTENT_SECURITY_POLICY);
     next();
   });
 

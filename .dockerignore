@@ -1,0 +1,20 @@
+# Secrets and local data never belong in a build context.
+.env
+.env.*
+!.env.example
+keys
+**/*.key
+**/*.db
+**/*.db-wal
+**/*.db-shm
+**/data
+
+# Installed packages are rebuilt inside the image.
+**/node_modules
+
+# Not needed to run the services.
+.git
+docs
+prompts
+AI_USAGE.md
+REFERENCE_ANALYSIS.md

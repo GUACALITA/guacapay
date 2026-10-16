@@ -103,6 +103,12 @@ export function createGatewayApp({ rapyd, gatewayToken, webhooks, forward, versi
     }
   });
 
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
+
   app.use(express.json({ limit: '20kb' }));
 
   app.get('/health', (req, res) => {
