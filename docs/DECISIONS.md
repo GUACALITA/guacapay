@@ -40,7 +40,16 @@ Each entry records a choice, its reason, and what it rules out.
 - **Money:** amounts are integer cents. Limits and accepted currencies come from configuration (`PAYMENT_MIN_CENTS`, `PAYMENT_MAX_CENTS`, `PAYMENT_CURRENCIES`).
 - **Visibility:** a user who does not own a payment gets the same 404 as for a payment that does not exist.
 
-## 007 — The database is opened in one module
+## 007 — Rapyd is reached only through the gateway
+
+- **Decision:** the app never calls Rapyd. It calls the gateway over HTTP, and only the gateway's `providers/rapyd.js` knows Rapyd URLs, field names, and signing.
+- **Signing:** as documented, `base64(hex(HMAC-SHA256(secret, method + path + salt + timestamp + access_key + secret + body)))`. Salt is 16 hex characters. The body is empty for GET and compact JSON for POST.
+- **Retries:** only network errors and timeouts are retried (twice). Each attempt gets a new salt and timestamp, and POST keeps the same `idempotency` header (the payment ID), so a retry cannot create a second checkout.
+- **Errors:** Rapyd errors become our codes (`provider_auth_failed`, `provider_rejected`, `provider_unavailable`). Rapyd's error code goes to logs only.
+- **Access:** checkout routes require `GATEWAY_TOKEN`, compared in constant time. The gateway port is bound to 127.0.0.1 in compose.
+- **Sandbox:** `RAPYD_SANDBOX=true` (default) uses `sandboxapi.rapyd.net`. Rapyd does not accept localhost return URLs, so real checkout tests need a public URL.
+
+## 008 — The database is opened in one module
 
 - **Decision:** only `backend/src/db.js` opens the connection. Startup runs pending migrations.
 - **Reason:** one place to change connection settings, and one place to close it in tests.

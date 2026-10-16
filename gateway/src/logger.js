@@ -1,0 +1,15 @@
+// Minimal JSON logger. Callers pass only identifiers and codes, never request bodies or keys.
+function write(level, message, fields = {}) {
+  const line = JSON.stringify({ time: new Date().toISOString(), level, msg: message, ...fields });
+  if (level === 'error' || level === 'warn') {
+    console.error(line);
+  } else {
+    console.log(line);
+  }
+}
+
+export const logger = {
+  info: (message, fields) => write('info', message, fields),
+  warn: (message, fields) => write('warn', message, fields),
+  error: (message, fields) => write('error', message, fields),
+};

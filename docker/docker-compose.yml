@@ -42,8 +42,9 @@ services:
     environment:
       # Fixed container port. Takes precedence over .env so the host mapping below stays valid.
       GATEWAY_PORT: "3203"
+    # Bound to localhost only. The gateway also requires GATEWAY_TOKEN on checkout routes.
     ports:
-      - "${GATEWAY_PORT:-3203}:3203"
+      - "127.0.0.1:${GATEWAY_PORT:-3203}:3203"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3203/health"]
       interval: 10s

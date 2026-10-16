@@ -2,8 +2,8 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16. 18/18 automated tests pass; container reached the live Rapyd sandbox and got an authentication error with placeholder keys. Real checkout not yet created (needs sandbox keys).
+**Files produced:** `gateway/package.json`, `gateway/src/{config,errors,logger,app,server}.js`, `gateway/src/providers/rapyd.js`, `gateway/test/{rapyd,gateway}.test.js`; edited `docker/docker-compose.yml` (gateway bound to 127.0.0.1), `.env.example` (`RAPYD_COUNTRY`, `GATEWAY_TOKEN`), `docs/DECISIONS.md` (decision 007)
 
 ## Prompt
 
