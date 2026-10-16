@@ -11,7 +11,20 @@ const PAYMENT_STATUS_TEXT = Object.freeze({
   failed: 'This payment did not go through.',
 });
 
+const CLAIM_RESULT_TEXT = Object.freeze({
+  completed: 'Claimed. The money is on its way to your wallet.',
+  failed: 'The transfer did not go through. Contact the sender.',
+});
+
 const ERROR_TEXT = Object.freeze({
+  claim_not_found: 'This claim link is not valid.',
+  claim_used: 'This claim has already been used.',
+  claim_expired: 'This claim link has expired. Ask the sender to send a new one.',
+  claim_in_progress: 'This claim is being processed. Wait a moment and refresh the page.',
+  claim_not_available: 'This payment is not ready to claim yet.',
+  email_mismatch: 'That email does not match this claim.',
+  invalid_destination: 'Enter a valid wallet address.',
+  transfer_not_configured: 'Transfers are not available yet. Your claim is still open. Try again later.',
   network_error: 'Could not reach the server. Check your connection and try again.',
   unauthorized: 'Your session has ended. Sign in again.',
   session_expired: 'Your session has ended. Sign in again.',
@@ -34,6 +47,10 @@ const ERROR_TEXT = Object.freeze({
 });
 
 const FALLBACK = 'Something went wrong. Please try again.';
+
+export function messageForClaimResult(status) {
+  return CLAIM_RESULT_TEXT[status] ?? 'Status unknown. Contact the sender.';
+}
 
 export function messageForStatus(status) {
   return PAYMENT_STATUS_TEXT[status] ?? 'Status unknown. Refresh the page.';

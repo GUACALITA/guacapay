@@ -8,6 +8,8 @@ import { createAuthRouter } from './auth/routes.js';
 import { unconfiguredMailer } from './auth/mailer.js';
 import { createPaymentsRouter } from './payments/routes.js';
 import { handleProviderEvent } from './payments/reconcile.js';
+import { createClaimsRouter } from './claims/routes.js';
+import { issueClaim } from './claims/service.js';
 import { requireGatewayToken } from './auth/gateway-token.js';
 
 // Turns an async handler's rejection into a call to next(err).
@@ -33,7 +35,12 @@ function parseInternalEvent(body) {
   };
 }
 
-export function createApp({ mailer = unconfiguredMailer, gateway = null, gatewayToken = config.gateway.token } = {}) {
+export function createApp({
+  mailer = unconfiguredMailer,
+  gateway = null,
+  gatewayToken = config.gateway.token,
+  transfer,
+} = {}) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -62,6 +69,7 @@ export function createApp({ mailer = unconfiguredMailer, gateway = null, gateway
 
   app.use('/api/auth', createAuthRouter({ mailer }));
   app.use('/api/payments', createPaymentsRouter({ gateway }));
+  app.use('/api/claims', createClaimsRouter({ mailer, transfer }));
 
   // Called only by the gateway, with the shared token. Always answers 200 for a well-formed event,
   // including unknown or already-applied ones, so the gateway does not keep retrying.
@@ -72,7 +80,17 @@ export function createApp({ mailer = unconfiguredMailer, gateway = null, gateway
       if (!gateway) {
         throw new AppError('gateway_not_configured', 503, 'Payment service is not configured.');
       }
-      const result = await handleProviderEvent(parseInternalEvent(req.body), { gateway });
+      const event = parseInternalEvent(req.body);
+      const result = await handleProviderEvent(event, { gateway });
+
+      // A payment that just became paid gets its claim link now. If this fails, the poller tries again.
+      if (result.outcome === 'applied') {
+        try {
+          await issueClaim(event.paymentReference, { mailer });
+        } catch (err) {
+          logger.warn('claim issue after event failed', { eventId: event.eventId, error: err.message });
+        }
+      }
       res.json(result);
     }),
   );

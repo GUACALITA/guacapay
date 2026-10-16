@@ -76,7 +76,17 @@ Each entry records a choice, its reason, and what it rules out.
 - **Sandbox banner:** the page asks `GET /api/config`, which reports `sandbox` from `RAPYD_SANDBOX`. If the config cannot be read, the banner stays hidden.
 - **Layout:** one column, 16 px side margins, fluid width, colors as tokens with dark mode. Checked in headless Edge at 360 px wide: no horizontal overflow on the four pages.
 
-## 010 — The database is opened in one module
+## 012 — Claims: link first, then the code, then one transfer
+
+- **Issuing:** a claim link is created only after its email is sent. If the email fails, the claim is removed and the payment stays `paid`, to be retried every minute. This means a stored claim always has a link that reached the recipient.
+- **Storage:** only `HMAC-SHA256(token)` is stored. The token is 32 random bytes, base64url. Expiry is 7 days, and a claim can be used once.
+- **Verifying the recipient:** the email must match the payment's recipient. A login-style code is then sent to that address (the same rules as prompt 04: 5 attempts, 10 minutes).
+- **Order of checks on confirm:** claim state, then destination, then code. A wrong destination does not use up the code.
+- **Destinations:** only `https` addresses on the hosts in `CLAIM_WALLET_HOSTS` (default: the testnet host confirmed in the documentation). Query strings, fragments, and credentials are refused.
+- **Single transfer:** the claim moves to `claiming` before the transfer. A second request gets `claim_in_progress`. If the transfer is not configured, the claim returns to `open` and nothing is marked failed. If the transfer fails, the payment becomes `failed`, the reason is recorded in `payment_events`, and the claim is not reopened.
+- **Transfer:** injected, and not configured yet (the Open Payments transfer is blocked on prompt 08). Until it is, confirming a claim returns 503 and the claim stays open.
+
+## 009 — The database is opened in one module
 
 - **Decision:** only `backend/src/db.js` opens the connection. Startup runs pending migrations.
 - **Reason:** one place to change connection settings, and one place to close it in tests.

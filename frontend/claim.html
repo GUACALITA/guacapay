@@ -6,6 +6,7 @@
   <title>Claim money · guacapay</title>
   <link rel="stylesheet" href="css/main.css">
   <script type="module" src="js/shell.js"></script>
+  <script type="module" src="js/pages/claim.js"></script>
 </head>
 <body>
   <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
@@ -17,21 +18,47 @@
   <main class="page">
     <h1>Claim money</h1>
 
-    <section class="card" aria-labelledby="claim-title">
-      <h2 id="claim-title">Claim link</h2>
-      <p id="claim-state" class="muted"></p>
-      <p class="muted">Claiming is added in a later step.</p>
+    <p id="claim-missing" class="field-error" hidden>This claim link is not valid.</p>
+
+    <section class="card" id="claim-flow" hidden>
+      <form id="claim-email-form" novalidate>
+        <h2>1. Confirm your email</h2>
+        <p class="muted">Enter the email address the money was sent to. We will send a code to it.</p>
+        <label for="claim-email">Email</label>
+        <input id="claim-email" name="email" type="email" autocomplete="email" required>
+        <p class="field-error" id="claim-email-error" hidden></p>
+        <button type="submit" id="send-claim-code">Send code</button>
+      </form>
+
+      <form id="claim-code-form" novalidate hidden>
+        <h2>2. Enter the code</h2>
+        <p class="muted">Enter the 6-digit code we sent to your email.</p>
+        <label for="claim-code">Code</label>
+        <input id="claim-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+        <p class="field-error" id="claim-code-error" hidden></p>
+        <button type="submit" id="check-claim-code">Continue</button>
+      </form>
+
+      <form id="claim-destination-form" novalidate hidden>
+        <h2>3. Where should the money go?</h2>
+        <p class="muted">Paste your wallet address. It must start with https.</p>
+        <label for="claim-destination">Wallet address</label>
+        <input id="claim-destination" name="destinationWalletAddress" type="url" autocomplete="off" required>
+        <p class="field-error" id="claim-destination-error" hidden></p>
+        <button type="submit" id="submit-claim">Claim money</button>
+      </form>
+
+      <p id="claim-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card" id="claim-result" hidden>
+      <h2>Claim</h2>
+      <p id="claim-result-text" class="status" role="status" aria-live="polite"></p>
     </section>
   </main>
 
   <footer class="site-footer">
     <p class="muted">guacapay</p>
   </footer>
-
-  <script type="module">
-    // The token is read from the URL and not shown. It is only used when claiming is connected.
-    const token = new URLSearchParams(location.search).get('token');
-    document.getElementById('claim-state').textContent = token ? 'A claim link was opened.' : 'No claim link was opened.';
-  </script>
 </body>
 </html>

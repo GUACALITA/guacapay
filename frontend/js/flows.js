@@ -32,6 +32,15 @@ export async function startPayment(client, body, idempotencyKey) {
   }
 }
 
+// The claim token from the link is the proof of access, so these calls do not use the sign-in token.
+export async function sendClaimCode(client, token, email) {
+  await client.post('/api/claims/verify-email', { token, email }, { auth: false });
+}
+
+export async function confirmClaim(client, { token, code, destinationWalletAddress }) {
+  return client.post('/api/claims/confirm', { token, code, destinationWalletAddress }, { auth: false });
+}
+
 export async function fetchPayment(client, paymentId) {
   return client.get(`/api/payments/${encodeURIComponent(paymentId)}`);
 }

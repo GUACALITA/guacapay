@@ -7,6 +7,7 @@ import { createApp } from './app.js';
 import { createGatewayClient } from './gateway-client.js';
 import { startPaymentPoller } from './payments/poller.js';
 import { attachLiveStatus } from './ws/live-status.js';
+import { unconfiguredMailer } from './auth/mailer.js';
 
 try {
   const applied = runMigrations();
@@ -26,4 +27,4 @@ server.listen(config.port, '0.0.0.0', () => {
   logger.info('app listening', { port: config.port, version: config.version });
 });
 
-startPaymentPoller({ gateway });
+startPaymentPoller({ gateway, mailer: unconfiguredMailer });

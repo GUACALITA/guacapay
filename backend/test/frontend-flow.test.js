@@ -208,6 +208,49 @@ test('the server reports the accepted currencies in /api/config', async () => {
   }
 });
 
+test('claim steps send the token from the link, not the sign-in token', async () => {
+  const { sendClaimCode, confirmClaim } = await import('../../frontend/js/flows.js');
+  const client = fakeClient(async () => ({ status: 'completed' }));
+
+  await sendClaimCode(client, 'link-token-value-0123456789abcdef', 'bob@example.com');
+  assert.equal(client.calls[0].path, '/api/claims/verify-email');
+  assert.deepEqual(client.calls[0].body, { token: 'link-token-value-0123456789abcdef', email: 'bob@example.com' });
+  assert.equal(client.calls[0].options.auth, false);
+
+  const result = await confirmClaim(client, {
+    token: 'link-token-value-0123456789abcdef',
+    code: '123456',
+    destinationWalletAddress: 'https://ilp.interledger-test.dev/71dd8185',
+  });
+  assert.deepEqual(result, { status: 'completed' });
+  assert.equal(client.calls[1].path, '/api/claims/confirm');
+  assert.equal(client.calls[1].options.auth, false);
+});
+
+test('claim outcomes and errors have plain text, with no internal detail', async () => {
+  const { messageForClaimResult } = await import('../../frontend/js/messages.js');
+  assert.match(messageForClaimResult('completed'), /on its way/);
+  assert.match(messageForClaimResult('failed'), /did not go through/);
+
+  assert.equal(
+    messageForError(new ApiError({ code: 'claim_used', message: 'raw', status: 409 })),
+    'This claim has already been used.',
+  );
+  assert.equal(
+    messageForError(new ApiError({ code: 'transfer_not_configured', message: 'raw', status: 503 })),
+    'Transfers are not available yet. Your claim is still open. Try again later.',
+  );
+});
+
+test('the claim page has its three steps and loads its page script', () => {
+  const claim = readFileSync(join(frontendDir, 'claim.html'), 'utf8');
+  for (const id of ['claim-email-form', 'claim-code-form', 'claim-destination-form', 'claim-result']) {
+    assert.match(claim, new RegExp(`id="${id}"`));
+  }
+  assert.match(claim, /js\/pages\/claim\.js/);
+  assert.equal(/<script type="module">/.test(claim), false, 'page logic lives in js/pages/');
+});
+
 test('pages keep their forms and load their page scripts', () => {
   const index = readFileSync(join(frontendDir, 'index.html'), 'utf8');
   assert.match(index, /id="email-form"/);

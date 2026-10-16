@@ -2,8 +2,13 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16, partly verified. Backend 101/101 automated tests pass (12 new claim tests). Container: claim routes answer correctly for an unknown token (404), and `claim.html` is served. **Not verified end to end:** the claim email (prompt 13), and the transfer (prompt 08 is blocked, so confirming a claim returns 503 for now).
+**Files produced:** `backend/src/claims/{service,routes,transfer}.js`, `backend/test/claims.test.js`, `frontend/claim.html` (page logic moved out of the file), `frontend/js/pages/claim.js`; edited `backend/src/auth/mailer.js` (`sendClaimLink`), `backend/src/payments/service.js` (`addPaymentEvent`), `backend/src/payments/poller.js` (issues pending claims), `backend/src/app.js` (mounts `/api/claims`, issues the link after a payment becomes paid), `backend/src/server.js`, `backend/src/config.js` (`CLAIM_WALLET_HOSTS`), `frontend/js/flows.js`, `frontend/js/messages.js`, `backend/test/frontend-flow.test.js`, `.env.example`, `docs/DECISIONS.md` (decision 012)
+
+**Deviations and gaps:**
+- The recipient's login code is a standard login code (prompt 04). It is not tied to the claim, but it is single-use and expires in 10 minutes.
+- The code is consumed when the destination is valid, even if the transfer then fails. A new code is then needed.
+- Confirming a claim returns 503 until the transfer exists; the claim stays open.
 
 ## Prompt
 
