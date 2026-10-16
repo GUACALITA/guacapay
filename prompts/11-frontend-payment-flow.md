@@ -2,8 +2,15 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16, partly verified. Backend 86/86 automated tests pass. Served pages checked in headless Edge: sandbox banner shows, signed-out states are correct, no horizontal overflow at 360 px. **Not verified end to end:** a real sign-in (email is not configured until prompt 13), and a real sandbox payment (needs the webhook URL and sandbox keys confirmed).
+**Files produced:** `frontend/index.html`, `frontend/new.html`, `frontend/payment.html` (page logic moved out of the file), `frontend/js/{money,payment-form,messages,flows}.js`, `frontend/js/pages/{login,new-payment,payment}.js`, `backend/test/frontend-flow.test.js`; edited `frontend/js/api.js` (extra headers, for `Idempotency-Key`), `frontend/css/main.css` (form, error and status styles), `backend/src/app.js` (`/api/config` also returns `currencies`), `backend/test/frontend-shell.test.js` (`/api/config` check reads `sandbox` only)
+
+**Notes:**
+- The form sends one `Idempotency-Key` per attempt, and reuses it when the same details are sent again after an error.
+- A checkout that was already started sends the payer to the payment page, not to a second checkout.
+- The payment page does not show the payment ID or any provider detail.
+- The Rapyd return message: the status text covers it (for example, "waiting for your payment to be confirmed"). There is no separate return message yet.
+- `.env` sets no `PAYMENT_CURRENCIES`, so only USD is offered. The testnet wallet is EUR, so this must be decided before a test transfer.
 
 ## Prompt
 

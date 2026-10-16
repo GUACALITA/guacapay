@@ -6,6 +6,7 @@
   <title>Send money · guacapay</title>
   <link rel="stylesheet" href="css/main.css">
   <script type="module" src="js/shell.js"></script>
+  <script type="module" src="js/pages/new-payment.js"></script>
 </head>
 <body>
   <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
@@ -20,21 +21,35 @@
   <main class="page">
     <h1>Send money</h1>
 
-    <section class="card" aria-labelledby="form-title">
+    <section class="card" id="signed-out" hidden>
+      <p>You need to sign in before you can send money.</p>
+      <p><a href="index.html">Go to sign in</a></p>
+    </section>
+
+    <section class="card" id="form-section" aria-labelledby="form-title" hidden>
       <h2 id="form-title">Payment details</h2>
-      <p class="muted">The payment form is added in the next step.</p>
-      <form id="payment-form" aria-describedby="form-title">
+
+      <form id="payment-form" novalidate>
         <label for="recipient-email">Recipient email</label>
-        <input id="recipient-email" name="recipient_email" type="email" autocomplete="off" disabled>
+        <input id="recipient-email" name="recipient_email" type="email" autocomplete="off" required>
+        <p class="field-error" id="recipient-email-error" hidden></p>
 
         <label for="amount">Amount</label>
-        <input id="amount" name="amount" type="text" inputmode="decimal" disabled>
+        <input id="amount" name="amount" type="text" inputmode="decimal" autocomplete="off" required>
+        <p class="field-error" id="amount-error" hidden></p>
+
+        <label for="currency">Currency</label>
+        <select id="currency" name="currency"></select>
+        <p class="field-error" id="currency-error" hidden></p>
 
         <label for="message">Message (optional)</label>
-        <textarea id="message" name="message" rows="3" disabled></textarea>
+        <textarea id="message" name="message" rows="3" maxlength="500"></textarea>
+        <p class="field-error" id="message-error" hidden></p>
 
-        <button type="submit" disabled>Continue to payment</button>
+        <button type="submit" id="submit-payment">Continue to payment</button>
       </form>
+
+      <p id="form-status" class="status" role="status" aria-live="polite"></p>
     </section>
   </main>
 

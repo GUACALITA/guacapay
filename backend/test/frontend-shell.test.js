@@ -187,9 +187,9 @@ test('/api/config reports sandbox mode from RAPYD_SANDBOX', async () => {
       child.on('close', (code) => (code === 0 ? resolve(JSON.parse(out.trim().split('\n').pop())) : reject(new Error(err))));
     });
 
-  assert.deepEqual(await run(undefined), { sandbox: true }, 'sandbox is the default');
-  assert.deepEqual(await run('true'), { sandbox: true });
-  assert.deepEqual(await run('false'), { sandbox: false });
+  assert.equal((await run(undefined)).sandbox, true, 'sandbox is the default');
+  assert.equal((await run('true')).sandbox, true);
+  assert.equal((await run('false')).sandbox, false);
 });
 
 test('every page has the viewport, styles, shell script and banner', () => {

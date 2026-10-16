@@ -37,8 +37,8 @@ export function createApi({ baseUrl = '', fetchImpl = (...args) => globalThis.fe
     }
   }
 
-  async function request(method, path, { body, auth = true } = {}) {
-    const headers = { Accept: 'application/json' };
+  async function request(method, path, { body, auth = true, headers: extraHeaders = {} } = {}) {
+    const headers = { Accept: 'application/json', ...extraHeaders };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
 
     const token = auth ? getToken() : null;

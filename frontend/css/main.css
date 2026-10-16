@@ -11,6 +11,7 @@
   --banner-bg: #fff4d6;
   --banner-fg: #5c4500;
   --focus: #1d4ed8;
+  --danger: #a4262c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,6 +26,7 @@
     --banner-bg: #3b2f08;
     --banner-fg: #ffe9a8;
     --focus: #7aa8ff;
+    --danger: #ff8a8f;
   }
 }
 
@@ -39,6 +41,7 @@
   --banner-bg: #3b2f08;
   --banner-fg: #ffe9a8;
   --focus: #7aa8ff;
+  --danger: #ff8a8f;
 }
 
 *,
@@ -146,6 +149,7 @@ label {
 }
 
 input,
+select,
 textarea,
 button {
   font: inherit;
@@ -170,9 +174,28 @@ button {
 
 button:disabled,
 input:disabled,
+select:disabled,
 textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.field-error {
+  color: var(--danger);
+  margin: 4px 0 0;
+  font-size: 0.9375rem;
+}
+
+.status {
+  margin: 12px 0 0;
+  min-height: 1.5em;
+  font-weight: 600;
 }
 
 .site-footer {

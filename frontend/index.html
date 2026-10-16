@@ -6,6 +6,7 @@
   <title>guacapay</title>
   <link rel="stylesheet" href="css/main.css">
   <script type="module" src="js/shell.js"></script>
+  <script type="module" src="js/pages/login.js"></script>
 </head>
 <body>
   <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
@@ -21,14 +22,32 @@
     <h1>Send money to an email address</h1>
     <p>Enter an email address and an amount. The recipient gets a link to claim the money.</p>
 
-    <section class="card" aria-labelledby="sign-in-title">
+    <section class="card" id="sign-in" aria-labelledby="sign-in-title">
       <h2 id="sign-in-title">Sign in</h2>
-      <p class="muted">Sign-in is added in the next step.</p>
-      <form id="login-form" aria-describedby="sign-in-title">
+
+      <form id="email-form" novalidate>
         <label for="login-email">Email</label>
-        <input id="login-email" name="email" type="email" autocomplete="email" disabled>
-        <button type="submit" disabled>Send code</button>
+        <input id="login-email" name="email" type="email" autocomplete="email" required>
+        <p class="field-error" id="login-email-error" hidden></p>
+        <button type="submit" id="send-code">Send code</button>
       </form>
+
+      <form id="code-form" novalidate hidden>
+        <p class="muted">We sent a 6-digit code to <span id="code-email"></span>.</p>
+        <label for="login-code">Code</label>
+        <input id="login-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+        <p class="field-error" id="login-code-error" hidden></p>
+        <button type="submit" id="verify-code">Sign in</button>
+        <button type="button" id="change-email" class="secondary">Use a different email</button>
+      </form>
+
+      <p id="login-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card" id="signed-in" hidden>
+      <h2>You are signed in</h2>
+      <p><a href="new.html">Send money</a></p>
+      <button type="button" id="sign-out" class="secondary">Sign out</button>
     </section>
   </main>
 
