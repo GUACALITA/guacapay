@@ -20,6 +20,7 @@ Each entry links to the prompt file in `prompts/` that produced the work.
 |---|---|---|---|---|---|
 | 2026-10-16 | `prompts/00-project-setup.md` | Claude Code, Claude Haiku 5.5 | docs / setup | `README.md`, `.gitignore`, `.env.example`, `.nvmrc`, `docs/CONVENTIONS.md`, folders | Ran the prompt. Verified ignore rules with `git check-ignore` (read-only). Removed default values from `.env.example` to match the prompt's "no values" rule. |
 | 2026-10-16 | `prompts/01-docker-compose.md` | Claude Code, Claude Haiku 5.5 | docker | `docker/docker-compose.yml`, `docker/app.Dockerfile`, `docker/gateway.Dockerfile`, placeholder `backend/` and `gateway/` servers | `docker compose config` passes; both images build; `/health` returns 200 for app and gateway in temporary containers. Full `up` not run: mailpay containers hold ports 3202, 3203, 8026. Placeholder servers are replaced in prompts 02 and 06. |
+| 2026-10-16 | `prompts/02-backend-core.md` | Claude Code, Claude Haiku 5.5 | backend | `backend/src/{config,logger,errors,server}.js`, `backend/test/core.test.js`, `backend/package.json`, `backend/package-lock.json`; edited `docker/docker-compose.yml` and `docker/app.Dockerfile` | 4/4 automated tests pass in `node:20-alpine`. Image checked: no secrets gives clear errors; with secrets `/health` returns 200. Found and fixed: `.env` could override the container port, so compose now fixes `APP_PORT` inside the container. |
 
 ## 3. Components and configuration
 

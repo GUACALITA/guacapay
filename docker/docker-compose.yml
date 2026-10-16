@@ -10,6 +10,9 @@ services:
     env_file:
       - path: ../.env
         required: false
+    environment:
+      # Fixed container port. Takes precedence over .env so the host mapping below stays valid.
+      APP_PORT: "3202"
     ports:
       - "${APP_PORT:-3202}:3202"
     volumes:
@@ -35,6 +38,9 @@ services:
     env_file:
       - path: ../.env
         required: false
+    environment:
+      # Fixed container port. Takes precedence over .env so the host mapping below stays valid.
+      GATEWAY_PORT: "3203"
     ports:
       - "${GATEWAY_PORT:-3203}:3203"
     healthcheck:
