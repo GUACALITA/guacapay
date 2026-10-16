@@ -1,0 +1,10 @@
+{
+  "name": "guacapay-gateway",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  }
+}

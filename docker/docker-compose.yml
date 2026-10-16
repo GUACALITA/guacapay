@@ -1,0 +1,56 @@
+# guacapay local stack.
+# Run from the repository root: docker compose -f docker/docker-compose.yml up --build
+name: guacapay
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/app.Dockerfile
+    env_file:
+      - path: ../.env
+        required: false
+    ports:
+      - "${APP_PORT:-3202}:3202"
+    volumes:
+      - app_data:/app/data
+      - ../keys:/app/keys:ro
+    depends_on:
+      gateway:
+        condition: service_healthy
+      mailcatcher:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3202/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: docker/gateway.Dockerfile
+    env_file:
+      - path: ../.env
+        required: false
+    ports:
+      - "${GATEWAY_PORT:-3203}:3203"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3203/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  mailcatcher:
+    image: axllent/mailpit:latest
+    # SMTP (1025) stays inside the Docker network; only the web UI is published.
+    ports:
+      - "8026:8025"
+    restart: unless-stopped
+
+volumes:
+  app_data:
