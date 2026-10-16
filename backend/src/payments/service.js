@@ -194,3 +194,12 @@ export function transitionPayment(paymentId, to, { db = getDb() } = {}) {
   publishPaymentUpdated({ paymentId, status: updated.status, at: updated.updated_at });
   return updated;
 }
+
+// Records something that is not a state change, such as why a transfer failed. Never put secrets in the payload.
+export function addPaymentEvent(paymentId, type, payload, { db = getDb() } = {}) {
+  db.prepare('INSERT INTO payment_events (payment_id, type, payload_json) VALUES (?, ?, ?)').run(
+    paymentId,
+    type,
+    JSON.stringify(payload),
+  );
+}

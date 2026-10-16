@@ -1,9 +1,14 @@
-// The interface used to send login codes. The real email module replaces this in prompt 13.
-// Until then, requesting a code fails with 503, so no code is ever sent or logged.
+// The interface used to send email. The real email module replaces this in prompt 13.
+// Until then, every send fails with 503, so no code or claim link is ever sent or logged.
 import { AppError } from '../errors.js';
+
+const notConfigured = () => new AppError('email_not_configured', 503, 'Email delivery is not configured yet.');
 
 export const unconfiguredMailer = {
   async sendLoginCode() {
-    throw new AppError('email_not_configured', 503, 'Email delivery is not configured yet.');
+    throw notConfigured();
+  },
+  async sendClaimLink() {
+    throw notConfigured();
   },
 };

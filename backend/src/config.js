@@ -56,6 +56,12 @@ if (minAmountCents > maxAmountCents) {
   problems.push('PAYMENT_MIN_CENTS must not be greater than PAYMENT_MAX_CENTS');
 }
 
+// Wallet hosts a claim may pay out to. Testnet only until the transfer is approved for production.
+const claimWalletHosts = (process.env.CLAIM_WALLET_HOSTS || 'ilp.interledger-test.dev')
+  .split(',')
+  .map((host) => host.trim().toLowerCase())
+  .filter(Boolean);
+
 const currencies = (process.env.PAYMENT_CURRENCIES || 'USD')
   .split(',')
   .map((code) => code.trim().toUpperCase())
@@ -89,6 +95,9 @@ export const config = {
     minAmountCents,
     maxAmountCents,
     currencies,
+  },
+  claims: {
+    walletHosts: claimWalletHosts,
   },
   // Values of secret-like variables, used by the logger to mask them in output.
   // Short values are skipped: they would mask ordinary words.
