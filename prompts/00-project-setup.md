@@ -2,8 +2,8 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16
+**Files produced:** `README.md` (replaced stub), `.gitignore`, `.env.example`, `.nvmrc`, `docs/CONVENTIONS.md`; folders `backend/`, `frontend/`, `docker/`, `docs/`
 
 ## Prompt
 

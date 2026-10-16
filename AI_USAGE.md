@@ -18,7 +18,7 @@ Each entry links to the prompt file in `prompts/` that produced the work.
 
 | Date | Prompt file | Tool | Area (backend / frontend / docker / js / websocket / docs) | Files touched | Notes |
 |---|---|---|---|---|---|
-| _to fill_ | _to fill_ | _to fill_ | _to fill_ | _to fill_ | _to fill_ |
+| 2026-10-16 | `prompts/00-project-setup.md` | Claude Code, Claude Haiku 5.5 | docs / setup | `README.md`, `.gitignore`, `.env.example`, `.nvmrc`, `docs/CONVENTIONS.md`, folders | Ran the prompt. Verified ignore rules with `git check-ignore` (read-only). Removed default values from `.env.example` to match the prompt's "no values" rule. |
 
 ## 3. Components and configuration
 
