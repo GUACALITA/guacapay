@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claim money · guacapay</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script type="module" src="js/shell.js"></script>
+</head>
+<body>
+  <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html">guacapay</a>
+  </header>
+
+  <main class="page">
+    <h1>Claim money</h1>
+
+    <section class="card" aria-labelledby="claim-title">
+      <h2 id="claim-title">Claim link</h2>
+      <p id="claim-state" class="muted"></p>
+      <p class="muted">Claiming is added in a later step.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p class="muted">guacapay</p>
+  </footer>
+
+  <script type="module">
+    // The token is read from the URL and not shown. It is only used when claiming is connected.
+    const token = new URLSearchParams(location.search).get('token');
+    document.getElementById('claim-state').textContent = token ? 'A claim link was opened.' : 'No claim link was opened.';
+  </script>
+</body>
+</html>

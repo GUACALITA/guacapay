@@ -68,7 +68,15 @@ Each entry records a choice, its reason, and what it rules out.
 - **Heartbeat:** a ping every 30 s. A client that does not answer within 10 s is dropped.
 - **Browser:** `frontend/js/live-status.js` reconnects with exponential backoff (about 1 s doubling to 30 s, with jitter). It stops on 1008 and on token errors, and reports them to the caller.
 
-## 009 — The database is opened in one module
+## 011 — Frontend: plain pages, one API client, session token in sessionStorage
+
+- **Stack:** plain HTML, CSS, and ES modules. No framework and no build step.
+- **Session:** the token is kept in `sessionStorage`, so it clears when the tab closes. It is never written to `localStorage`. If storage is blocked, the user is simply signed out.
+- **API:** every backend call goes through `frontend/js/api.js`. Every failure becomes the same `ApiError` shape (code, message, status, request ID). A 401 while signed in ends the session.
+- **Sandbox banner:** the page asks `GET /api/config`, which reports `sandbox` from `RAPYD_SANDBOX`. If the config cannot be read, the banner stays hidden.
+- **Layout:** one column, 16 px side margins, fluid width, colors as tokens with dark mode. Checked in headless Edge at 360 px wide: no horizontal overflow on the four pages.
+
+## 010 — The database is opened in one module
 
 - **Decision:** only `backend/src/db.js` opens the connection. Startup runs pending migrations.
 - **Reason:** one place to change connection settings, and one place to close it in tests.

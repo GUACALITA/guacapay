@@ -2,8 +2,12 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16. Backend 67/67 automated tests pass (including the frontend checks). Headless Edge at 360 px wide: no horizontal overflow on index, new, payment and claim pages.
+**Files produced:** `frontend/index.html`, `frontend/new.html`, `frontend/payment.html`, `frontend/claim.html`, `frontend/css/main.css`, `frontend/js/api.js`, `frontend/js/shell.js`, `backend/test/frontend-shell.test.js`; edited `backend/src/config.js` (`sandbox`), `backend/src/app.js` (`GET /api/config`), `docs/DECISIONS.md` (decision 011)
+
+**Notes:**
+- The app reads `RAPYD_SANDBOX` only to show the banner. The gateway uses it for real calls.
+- The login, payment and claim forms are placeholders (disabled). Their logic belongs to prompts 11 and 12.
 
 ## Prompt
 

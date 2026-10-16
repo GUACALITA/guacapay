@@ -37,6 +37,18 @@ function readInteger(name, fallback, { min, max }) {
 }
 
 const port = readInteger('APP_PORT', 3202, { min: 1, max: 65535 });
+
+// Sandbox is the default. The app only reports this to the browser, to show a banner; the gateway uses it for real calls.
+function readBoolean(name, fallback) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  problems.push(`${name} must be true or false`);
+  return fallback;
+}
+
+const sandbox = readBoolean('RAPYD_SANDBOX', true);
 const minAmountCents = readInteger('PAYMENT_MIN_CENTS', 100, { min: 1, max: 1_000_000_000 });
 const maxAmountCents = readInteger('PAYMENT_MAX_CENTS', 1_000_000, { min: 1, max: 1_000_000_000 });
 
@@ -66,6 +78,7 @@ export const config = {
   frontendDir: join(here, '..', '..', 'frontend'),
   databasePath: process.env.DATABASE_PATH || join(here, '..', 'data', 'guacapay.db'),
   baseUrl: (process.env.BASE_URL || 'http://localhost:3202').replace(/\/+$/, ''),
+  sandbox,
   jwtSecret: process.env.JWT_SECRET,
   hmacSecret: process.env.HMAC_SECRET,
   gateway: {

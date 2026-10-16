@@ -55,6 +55,11 @@ export function createApp({ mailer = unconfiguredMailer, gateway = null, gateway
     res.json({ ok: true, service: 'app', version: config.version });
   });
 
+  // Settings the browser needs. Nothing secret goes here.
+  app.get('/api/config', (req, res) => {
+    res.json({ sandbox: config.sandbox });
+  });
+
   app.use('/api/auth', createAuthRouter({ mailer }));
   app.use('/api/payments', createPaymentsRouter({ gateway }));
 

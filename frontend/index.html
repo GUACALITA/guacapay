@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>guacapay</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script type="module" src="js/shell.js"></script>
+</head>
+<body>
+  <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html">guacapay</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="new.html">Send money</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <h1>Send money to an email address</h1>
+    <p>Enter an email address and an amount. The recipient gets a link to claim the money.</p>
+
+    <section class="card" aria-labelledby="sign-in-title">
+      <h2 id="sign-in-title">Sign in</h2>
+      <p class="muted">Sign-in is added in the next step.</p>
+      <form id="login-form" aria-describedby="sign-in-title">
+        <label for="login-email">Email</label>
+        <input id="login-email" name="email" type="email" autocomplete="email" disabled>
+        <button type="submit" disabled>Send code</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p class="muted">guacapay</p>
+  </footer>
+</body>
+</html>

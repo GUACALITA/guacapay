@@ -1,0 +1,181 @@
+/* Shared styles for every page. Mobile first: the layout works at 360px wide with 16px side margins. */
+
+:root {
+  --bg: #f6f7f9;
+  --fg: #1b1f24;
+  --muted: #5b6470;
+  --card: #ffffff;
+  --border: #d8dde3;
+  --accent: #0b6e4f;
+  --accent-fg: #ffffff;
+  --banner-bg: #fff4d6;
+  --banner-fg: #5c4500;
+  --focus: #1d4ed8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121417;
+    --fg: #e9ecef;
+    --muted: #9aa3ad;
+    --card: #1b1f24;
+    --border: #2f363e;
+    --accent: #2fb585;
+    --accent-fg: #0b1510;
+    --banner-bg: #3b2f08;
+    --banner-fg: #ffe9a8;
+    --focus: #7aa8ff;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #121417;
+  --fg: #e9ecef;
+  --muted: #9aa3ad;
+  --card: #1b1f24;
+  --border: #2f363e;
+  --accent: #2fb585;
+  --accent-fg: #0b1510;
+  --banner-bg: #3b2f08;
+  --banner-fg: #ffe9a8;
+  --focus: #7aa8ff;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.banner {
+  background: var(--banner-bg);
+  color: var(--banner-fg);
+  padding: 8px 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-weight: 700;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  line-height: 1.2;
+  margin: 16px 0 8px;
+}
+
+h2 {
+  font-size: 1.125rem;
+  margin: 0 0 8px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+form {
+  width: 100%;
+}
+
+label {
+  display: block;
+  margin: 12px 0 4px;
+  font-weight: 600;
+}
+
+input,
+textarea,
+button {
+  font: inherit;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+}
+
+button {
+  margin-top: 16px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.site-footer {
+  padding: 16px;
+  text-align: center;
+}

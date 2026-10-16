@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Send money · guacapay</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script type="module" src="js/shell.js"></script>
+</head>
+<body>
+  <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html">guacapay</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="new.html" aria-current="page">Send money</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <h1>Send money</h1>
+
+    <section class="card" aria-labelledby="form-title">
+      <h2 id="form-title">Payment details</h2>
+      <p class="muted">The payment form is added in the next step.</p>
+      <form id="payment-form" aria-describedby="form-title">
+        <label for="recipient-email">Recipient email</label>
+        <input id="recipient-email" name="recipient_email" type="email" autocomplete="off" disabled>
+
+        <label for="amount">Amount</label>
+        <input id="amount" name="amount" type="text" inputmode="decimal" disabled>
+
+        <label for="message">Message (optional)</label>
+        <textarea id="message" name="message" rows="3" disabled></textarea>
+
+        <button type="submit" disabled>Continue to payment</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p class="muted">guacapay</p>
+  </footer>
+</body>
+</html>

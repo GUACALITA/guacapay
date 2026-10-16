@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment status · guacapay</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script type="module" src="js/shell.js"></script>
+</head>
+<body>
+  <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html">guacapay</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="new.html">Send money</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <h1>Payment status</h1>
+
+    <section class="card" aria-labelledby="status-title">
+      <h2 id="status-title">Status</h2>
+      <p id="payment-id" class="muted"></p>
+      <p class="muted">Live status is connected in the next step.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p class="muted">guacapay</p>
+  </footer>
+
+  <script type="module">
+    // Shows which payment this page is for. The ID comes from the URL and is only displayed, never sent anywhere.
+    const id = new URLSearchParams(location.search).get('id');
+    document.getElementById('payment-id').textContent = id ? `Payment ${id}` : 'No payment selected.';
+  </script>
+</body>
+</html>
