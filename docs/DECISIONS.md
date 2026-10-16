@@ -59,6 +59,15 @@ Each entry records a choice, its reason, and what it rules out.
 - **Signature:** the webhook formula is `base64(HMAC-SHA256(url + salt + timestamp + access_key + secret_key + body))`, with the full URL configured in Rapyd (`RAPYD_WEBHOOK_URL`). The documentation does not say whether the HMAC is base64-encoded directly or as hex text, so both are accepted until a real sandbox webhook confirms which one Rapyd sends. No timestamp window is enforced, because Rapyd can resend old events.
 - **Shared token:** the gateway and the app use `GATEWAY_TOKEN` in both directions. The gateway does not need `HMAC_SECRET`, which protects stored codes.
 
+## 010 — Live status: WebSocket with the token in the first message
+
+- **Endpoint:** `/ws`. The client sends `{ type: "subscribe", paymentId, token }` as its first message. The token is not in the URL, so it does not appear in server or proxy logs.
+- **Access:** a client sees a payment only if it belongs to the token's user, otherwise it gets `payment_not_found`. The same error is used for a missing payment, so nothing is revealed.
+- **Updates:** published by an in-process event emitter after each database transaction commits. A nested transaction can publish before its outer transaction commits; the only such paths are checkout start and provider status, so a rollback there would show a status that was not saved. This does not work across several app instances; a shared bus would be needed before running more than one.
+- **Refusals:** a bad or missing token, an auth timeout (10 s), and an expired session (when the token's `exp` passes) all close the socket with code 1008. The client does not retry on 1008.
+- **Heartbeat:** a ping every 30 s. A client that does not answer within 10 s is dropped.
+- **Browser:** `frontend/js/live-status.js` reconnects with exponential backoff (about 1 s doubling to 30 s, with jitter). It stops on 1008 and on token errors, and reports them to the caller.
+
 ## 009 — The database is opened in one module
 
 - **Decision:** only `backend/src/db.js` opens the connection. Startup runs pending migrations.

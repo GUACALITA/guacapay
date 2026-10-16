@@ -6,6 +6,7 @@ import { config } from '../config.js';
 import { AppError } from '../errors.js';
 import { normalizeEmail } from '../validation.js';
 import { STATUS, assertTransition } from './states.js';
+import { publishPaymentUpdated } from './events.js';
 
 const MESSAGE_MAX_LENGTH = 500;
 const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_-]{8,100}$/;
@@ -97,7 +98,7 @@ export function createPayment({ senderId, body, idempotencyKey, db = getDb() }) 
   const input = parseNewPayment(body);
   const key = parseIdempotencyKey(idempotencyKey);
 
-  return db.transaction(() => {
+  const outcome = db.transaction(() => {
     if (key) {
       const existing = db
         .prepare('SELECT * FROM payments WHERE sender_id = ? AND idempotency_key = ?')
@@ -136,6 +137,15 @@ export function createPayment({ senderId, body, idempotencyKey, db = getDb() }) 
 
     return { payment: db.prepare('SELECT * FROM payments WHERE id = ?').get(id), created: true };
   })();
+
+  if (outcome.created) {
+    publishPaymentUpdated({
+      paymentId: outcome.payment.id,
+      status: outcome.payment.status,
+      at: outcome.payment.updated_at,
+    });
+  }
+  return outcome;
 }
 
 export function getPaymentForUser(id, userId, { db = getDb() } = {}) {
@@ -161,7 +171,7 @@ export function listPaymentsForUser(userId, { db = getDb() } = {}) {
 // Moves a payment to a new state and records the change in one transaction.
 // Throws InvalidTransitionError if the move is not allowed; nothing is written then.
 export function transitionPayment(paymentId, to, { db = getDb() } = {}) {
-  return db.transaction(() => {
+  const updated = db.transaction(() => {
     const current = db.prepare('SELECT status FROM payments WHERE id = ?').get(paymentId);
     if (!current) {
       throw new AppError('payment_not_found', 404, 'Payment not found.');
@@ -180,4 +190,7 @@ export function transitionPayment(paymentId, to, { db = getDb() } = {}) {
     recordEvent(db, paymentId, current.status, to);
     return db.prepare(`SELECT ${PUBLIC_COLUMNS} FROM payments WHERE id = ?`).get(paymentId);
   })();
+
+  publishPaymentUpdated({ paymentId, status: updated.status, at: updated.updated_at });
+  return updated;
 }

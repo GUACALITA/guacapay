@@ -13,8 +13,11 @@ export function issueToken(userId) {
   });
 }
 
-// Throws if the token is invalid, expired, or signed with another algorithm.
+// Returns the full payload (sub, iat, exp). Throws if the token is invalid, expired, or signed with another algorithm.
+export function verifyTokenPayload(token) {
+  return jwt.verify(token, config.jwtSecret, { algorithms: [ALGORITHM] });
+}
+
 export function verifyToken(token) {
-  const payload = jwt.verify(token, config.jwtSecret, { algorithms: [ALGORITHM] });
-  return payload.sub;
+  return verifyTokenPayload(token).sub;
 }

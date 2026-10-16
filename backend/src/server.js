@@ -1,10 +1,12 @@
-// Entry point: runs migrations, starts the HTTP server and the payment poller.
+// Entry point: runs migrations, starts the HTTP and WebSocket servers, and the payment poller.
+import { createServer } from 'node:http';
 import { config } from './config.js';
 import { logger } from './logger.js';
 import { runMigrations } from './migrate.js';
 import { createApp } from './app.js';
 import { createGatewayClient } from './gateway-client.js';
 import { startPaymentPoller } from './payments/poller.js';
+import { attachLiveStatus } from './ws/live-status.js';
 
 try {
   const applied = runMigrations();
@@ -17,7 +19,10 @@ try {
 const gateway = createGatewayClient({ baseUrl: config.gateway.url, token: config.gateway.token });
 const app = createApp({ gateway });
 
-app.listen(config.port, '0.0.0.0', () => {
+const server = createServer(app);
+attachLiveStatus(server);
+
+server.listen(config.port, '0.0.0.0', () => {
   logger.info('app listening', { port: config.port, version: config.version });
 });
 

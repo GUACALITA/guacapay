@@ -2,8 +2,12 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16. Backend 55/55 automated tests pass (9 new, including 2 browser-module tests). Container checked: `/health` 200, and a real WebSocket client without a token is refused with 1008.
+**Files produced:** `backend/src/ws/live-status.js`, `backend/src/payments/events.js`, `backend/test/live-status.test.js`, `backend/test/frontend-live-status.test.js`, `frontend/js/live-status.js`; edited `backend/src/payments/service.js` (publishes after commit), `backend/src/auth/tokens.js` (`verifyTokenPayload`), `backend/src/server.js` (HTTP server with WebSocket), `backend/package.json` (`ws`), `docs/DECISIONS.md` (decision 010)
+
+**Notes:**
+- Updates use an in-process event emitter, not polling. It works for one app instance only.
+- The ping timeout (10 s) and the auth timeout are in code, but the test covers only the ping schedule and the auth timeout with shorter values. The full ping-timeout path is not tested directly.
 
 ## Prompt
 
