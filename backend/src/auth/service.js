@@ -3,25 +3,17 @@ import { randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 import { getDb } from '../db.js';
 import { hashSecret } from '../hash.js';
 import { AppError } from '../errors.js';
+import { normalizeEmail } from '../validation.js';
 
 export const CODE_TTL_MS = 10 * 60 * 1000;
 export const MAX_CODE_ATTEMPTS = 5;
 export const EMAIL_WINDOW_MS = 15 * 60 * 1000;
 export const EMAIL_REQUEST_LIMIT = 3;
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE_PATTERN = /^\d{6}$/;
 
 // One message for wrong, expired, used, and unknown codes, so the response reveals nothing.
 const invalidCode = () => new AppError('invalid_code', 401, 'The code is invalid or has expired.');
-
-export function normalizeEmail(raw) {
-  const email = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
-  if (email.length > 254 || !EMAIL_PATTERN.test(email)) {
-    throw new AppError('invalid_email', 400, 'Enter a valid email address.');
-  }
-  return email;
-}
 
 // randomInt uses a cryptographically secure source.
 export function generateCode() {

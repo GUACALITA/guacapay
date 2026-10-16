@@ -6,6 +6,7 @@ import { logger } from './logger.js';
 import { AppError } from './errors.js';
 import { createAuthRouter } from './auth/routes.js';
 import { unconfiguredMailer } from './auth/mailer.js';
+import { createPaymentsRouter } from './payments/routes.js';
 
 export function createApp({ mailer = unconfiguredMailer } = {}) {
   const app = express();
@@ -30,6 +31,7 @@ export function createApp({ mailer = unconfiguredMailer } = {}) {
   });
 
   app.use('/api/auth', createAuthRouter({ mailer }));
+  app.use('/api/payments', createPaymentsRouter());
 
   // Any route not matched above.
   app.use((req, res, next) => {

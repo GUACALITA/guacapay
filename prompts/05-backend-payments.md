@@ -2,8 +2,8 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16, all checks passed (30/30 automated, container checked)
+**Files produced:** `backend/migrations/002-payments-message-idempotency.sql`, `backend/src/payments/{states,service,routes}.js`, `backend/src/validation.js`, `backend/test/payments.test.js`; edited `backend/src/config.js` (payment limits), `backend/src/app.js` (mounts `/api/payments`), `backend/src/auth/service.js` (uses shared `validation.js`), `backend/test/database.test.js` (expects migration 002 and the new columns), `.env.example`, `docs/DECISIONS.md` (decision 006)
 
 ## Prompt
 

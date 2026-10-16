@@ -32,7 +32,15 @@ Each entry records a choice, its reason, and what it rules out.
 - **Anti-enumeration:** a valid request gets the same response whether or not the address has an account. Wrong, expired, used, and unknown codes all return the same error.
 - **Email:** sending goes through an interface. Until the email module exists (prompt 13), requesting a code returns 503, so no code is sent or logged.
 
-## 006 — The database is opened in one module
+## 006 — Payment states, transitions, and idempotency
+
+- **Decision:** payments move through eight states (`created`, `awaiting_payment`, `paid`, `claimable`, `claimed`, `completed`, `expired`, `failed`). The allowed moves are one table in `backend/src/payments/states.js`. Any other move is rejected and writes nothing.
+- **Events:** every state change writes one `payment_events` row in the same transaction as the change. Creation is recorded as a move from nothing to `created`.
+- **Idempotency:** the optional `Idempotency-Key` header is unique per sender. A repeat with the same details returns the original payment (200). A repeat with different details returns 409.
+- **Money:** amounts are integer cents. Limits and accepted currencies come from configuration (`PAYMENT_MIN_CENTS`, `PAYMENT_MAX_CENTS`, `PAYMENT_CURRENCIES`).
+- **Visibility:** a user who does not own a payment gets the same 404 as for a payment that does not exist.
+
+## 007 — The database is opened in one module
 
 - **Decision:** only `backend/src/db.js` opens the connection. Startup runs pending migrations.
 - **Reason:** one place to change connection settings, and one place to close it in tests.
