@@ -2,8 +2,8 @@
 
 **Date:** 2026-10-16
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-16, all checks passed (20/20 automated, container checked). Login completes only after prompt 13 supplies email delivery.
+**Files produced:** `backend/src/app.js`, `backend/src/auth/{service,tokens,middleware,mailer,routes}.js`, `backend/src/rate-limit.js`, `backend/test/auth.test.js`; edited `backend/src/server.js` (now uses `app.js`), `backend/package.json` (jsonwebtoken), `docs/DECISIONS.md` (decision 005)
 
 ## Prompt
 
