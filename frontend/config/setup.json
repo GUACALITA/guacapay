@@ -1,6 +1,6 @@
 {
   "walletSignUpUrl": "https://wallet.interledger-test.dev",
   "keyDocumentationUrl": "https://openpayments.dev/sdk/wallet-get-keys/",
-  "linkLimitCents": 1000,
+  "linkLimitCents": 100000000,
   "linkLimitNote": "Test money only. The wallet asks you to approve this limit on its own page."
 }

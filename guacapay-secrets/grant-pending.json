@@ -1,0 +1,8 @@
+{
+  "continueUri": "https://auth.interledger-test.dev/continue/494231a7-2e78-411f-a103-47ff021ae554",
+  "continueToken": "7CB0112D016877A921AA",
+  "nonce": "1f26ea89e81d64c2a92d0b8e67af91aa",
+  "walletId": "https://ilp.interledger-test.dev/71dd8185",
+  "authServer": "https://auth.interledger-test.dev/f537937b-7016-481b-b655-9f0d1014822c",
+  "createdAt": "2026-10-16T22:32:27.840Z"
+}

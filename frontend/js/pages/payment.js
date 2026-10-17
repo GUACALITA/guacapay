@@ -84,7 +84,7 @@ function wirePayForm(paymentId, amountCents) {
     try {
       const outcome = await payWithWallet(api, paymentId, walletId);
       renderStatus(outcome.status);
-      const needsConsent = ['no_active_grant', 'grant_expired', 'openpayments_rejected', 'outgoing_failed'].includes(outcome.reason);
+      const needsConsent = ['no_active_grant', 'grant_expired'].includes(outcome.reason);
       if (needsConsent) {
         $('pay-status').textContent = 'Redirecting to Interledger to authorize the payment…';
         const approvalUrl = await renewConsent(walletId, amountCents);
@@ -92,8 +92,10 @@ function wirePayForm(paymentId, amountCents) {
       }
       if (outcome.status === 'awaiting_payment') {
         $('pay-status').textContent = 'The transfer is still running. This page will update when it finishes.';
-      } else if (outcome.status === 'failed' && outcome.reason) {
-        $('pay-status').textContent = messageForError({ code: outcome.reason });
+      } else if (outcome.status === 'failed') {
+        $('pay-status').textContent = outcome.detail
+          ? `No se pudo completar el pago. Motivo de Interledger: ${outcome.detail}`
+          : messageForError({ code: outcome.reason });
       } else {
         $('pay-status').textContent = '';
       }

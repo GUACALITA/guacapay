@@ -76,6 +76,7 @@ export async function requestConsent({ userId, walletId, purpose, limitCents, in
     return { id: grantId, status: GRANT_STATUS.GRANTED, approvalUrl: null };
   }
 
+  const approvalUrl = pending.interact.redirect;
   insertGrant(db, {
     grantId,
     walletId,
@@ -86,14 +87,15 @@ export async function requestConsent({ userId, walletId, purpose, limitCents, in
     nonce,
     continueUri: pending.continue.uri,
     continueTokenEnc: seal(pending.continue.access_token.value),
+    interactUri: approvalUrl,
   });
-  return { id: grantId, status: GRANT_STATUS.PENDING, approvalUrl: pending.interact.redirect };
+  return { id: grantId, status: GRANT_STATUS.PENDING, approvalUrl };
 }
 
 function insertGrant(db, row) {
   db.prepare(
-    `INSERT INTO grants (id, wallet_id, purpose, status, access_limits_json, continue_uri, continue_token_enc, nonce_hash, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO grants (id, wallet_id, purpose, status, access_limits_json, continue_uri, continue_token_enc, nonce_hash, created_at, interact_uri)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     row.grantId,
     row.walletId,
@@ -104,6 +106,7 @@ function insertGrant(db, row) {
     row.continueTokenEnc,
     sha256(row.nonce),
     iso(),
+    row.interactUri || null,
   );
 }
 

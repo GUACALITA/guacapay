@@ -3,6 +3,7 @@
 import { randomUUID } from 'node:crypto';
 import { getDb } from '../db.js';
 import { AppError } from '../errors.js';
+import { logger } from '../logger.js';
 import { getAccessToken } from '../grants/service.js';
 import * as openPayments from '../providers/openpayments.js';
 
@@ -89,10 +90,11 @@ function saveLeg(db, transferId, kind, remoteId, status) {
   ).run(randomUUID(), transferId, kind, remoteId, status, iso(), iso());
 }
 
-function setTransferState(db, transferId, status, failureCode) {
-  db.prepare('UPDATE transfers SET status = ?, failure_code = ?, updated_at = ? WHERE id = ?').run(
+function setTransferState(db, transferId, status, failureCode, failureDetail = null) {
+  db.prepare('UPDATE transfers SET status = ?, failure_code = ?, failure_detail = ?, updated_at = ? WHERE id = ?').run(
     status,
     failureCode ?? null,
+    failureDetail,
     iso(),
     transferId,
   );
@@ -212,6 +214,7 @@ async function execute(transfer, deps, db) {
     }
     if (failed) {
       const reason = outgoing.metadata?.cancellationReason ?? 'payment failed on the network';
+      logger.warn('outgoing payment failed on network', { transferId: transfer.id, reason, state, failed: outgoing.failed });
       saveLeg(db, transfer.id, 'outgoing', outgoingLeg.remote_id, LEG.FAILED);
       throw new AppError('outgoing_failed', 422, `The test network reported the payment as failed: ${reason}`);
     }
@@ -243,10 +246,11 @@ export async function runTransfer(transferId, { db = getDb(), deps: overrides = 
     }
   } catch (err) {
     const code = err instanceof AppError ? err.code : 'internal_error';
+    const detail = err instanceof AppError ? err.message : 'Unexpected error';
     if (RETRYABLE.has(code) || code === 'internal_error') {
-      setTransferState(db, transferId, TRANSFER_STATUS.PENDING, code);
+      setTransferState(db, transferId, TRANSFER_STATUS.PENDING, code, detail);
     } else {
-      setTransferState(db, transferId, TRANSFER_STATUS.FAILED, code);
+      setTransferState(db, transferId, TRANSFER_STATUS.FAILED, code, detail);
     }
   }
 

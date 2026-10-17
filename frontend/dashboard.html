@@ -10,10 +10,15 @@
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/dashboard.css">
   <script type="module" src="js/shell.js?v=3"></script>
-  <script type="module" src="js/pages/dashboard.js?v=4"></script>
+  <script type="module" src="js/pages/dashboard.js?v=5"></script>
 </head>
 <body>
   <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode · No real money moves</div>
+  <div id="custody-approval-banner" role="alert" hidden style="background:#f5a62322;border-bottom:1px solid #f5a623;padding:12px 20px;font-size:.88rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="color:#f5a623;font-weight:700">⚠️ Platform wallet not approved —</span>
+    <span style="color:#c5d0e0">Real ILP payments won't work until the platform custody wallet is approved.</span>
+    <a id="custody-approval-link" href="#" target="_blank" rel="noopener noreferrer" style="padding:6px 14px;background:#f5a623;color:#0a0e14;border-radius:8px;font-weight:700;font-size:.82rem;text-decoration:none;white-space:nowrap">Approve custody wallet →</a>
+  </div>
 
   <header class="site-header">
     <a class="brand" href="dashboard.html">guacapay</a>

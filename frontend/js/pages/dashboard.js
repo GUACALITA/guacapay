@@ -701,12 +701,24 @@ async function loadHistory() {
 
 // ---- Start ----
 
+async function checkCustodyApproval() {
+  try {
+    const res = await fetch('/api/setup/status');
+    const data = await res.json();
+    if (!data.configured && data.approvalUrl) {
+      $('custody-approval-link').href = data.approvalUrl;
+      $('custody-approval-banner').hidden = false;
+    }
+  } catch { /* non-critical */ }
+}
+
 async function start() {
   if (!api.isSignedIn()) {
     $('signed-out').hidden = false;
     return;
   }
   $('dashboard').hidden = false;
+  checkCustodyApproval();
   $('request-form').addEventListener('submit', onRequestSubmit);
   $('flow-form').addEventListener('submit', onFlowSubmit);
   renderTypeChips();

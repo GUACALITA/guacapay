@@ -14,7 +14,7 @@ import { createWalletsRouter } from './wallets/routes.js';
 import { createGrantsRouter } from './grants/routes.js';
 import { issueClaim } from './claims/service.js';
 import { requireGatewayToken } from './auth/gateway-token.js';
-import { createCustodyRouter } from './custody/routes.js';
+import { createCustodyRouter, getCustodySetupStatus } from './custody/routes.js';
 import { createRequestsRouter } from './requests/routes.js';
 import { createSubscriptionsRouter } from './subscriptions/routes.js';
 import { createPoolsRouter } from './pools/routes.js';
@@ -92,6 +92,11 @@ export function createApp({
 
   app.get('/health', (req, res) => {
     res.json({ ok: true, service: 'app', version: config.version });
+  });
+
+  // Operator setup status — shows the custody wallet approval URL when pending. No secrets exposed.
+  app.get('/api/setup/status', (req, res) => {
+    res.json(getCustodySetupStatus());
   });
 
   // Settings the browser needs. Nothing secret goes here.

@@ -9,7 +9,7 @@ const STATUS_TEXT = Object.freeze({
   revoked: 'Revoked',
 });
 
-const DEFAULT_LINK_LIMIT_CENTS = 1000;
+const DEFAULT_LINK_LIMIT_CENTS = 100000000;
 
 // The element ids the form expects. Both pages provide them.
 const IDS = Object.freeze({
@@ -67,7 +67,7 @@ export function setupWalletLinking({ doc = globalThis.document, client, fetchImp
     $('empty').hidden = wallets.length > 0;
   }
 
-  // Asks for consent. The wallet's own page opens next; the approval finishes there, and the wallet comes back to guacapay.
+  // Asks for consent. Shows the approval link on the page so the user can click it.
   async function approveWallet(walletId, button) {
     button.disabled = true;
     $('status').textContent = 'Asking your wallet for approval…';
@@ -75,7 +75,20 @@ export function setupWalletLinking({ doc = globalThis.document, client, fetchImp
       await limitReady;
       const result = await client.post('/api/grants', { wallet_id: walletId, purpose: 'link', limit_cents: linkLimitCents });
       if (result.approvalUrl) {
-        globalThis.location.assign(result.approvalUrl);
+        const container = doc.createElement('div');
+        container.style.cssText = 'margin-top:12px;padding:14px;background:var(--gp-card2,#1a2333);border:1px solid var(--gp-amber,#f5a623);border-radius:12px';
+        const label = doc.createElement('p');
+        label.style.cssText = 'margin:0 0 10px;font-size:.85rem;color:var(--gp-amber,#f5a623);font-weight:600';
+        label.textContent = '⚠️ Approval required — click the button below to open your Interledger wallet:';
+        const link = doc.createElement('a');
+        link.href = result.approvalUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.cssText = 'display:inline-block;padding:10px 20px;background:var(--gp-green,#00e898);color:#0a0e14;border-radius:8px;font-weight:700;font-size:.9rem;text-decoration:none';
+        link.textContent = 'Approve in Interledger wallet →';
+        container.append(label, link);
+        button.parentElement.append(container);
+        $('status').textContent = '';
         return;
       }
       $('status').textContent = 'Linked.';

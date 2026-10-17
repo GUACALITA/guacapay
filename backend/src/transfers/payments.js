@@ -84,9 +84,9 @@ export function settlePayIn(paymentId, transfer, { db = getDb() } = {}) {
     if (transfer.status === TRANSFER_STATUS.FAILED) {
       recordFinishedTransfer(paymentId, transfer, { db });
       transitionPayment(paymentId, STATUS.FAILED, { db });
-      return { status: STATUS.FAILED, reason: transfer.failure_code };
+      return { status: STATUS.FAILED, reason: transfer.failure_code, detail: transfer.failure_detail };
     }
-    return { status: STATUS.AWAITING_PAYMENT, reason: transfer.failure_code };
+    return { status: STATUS.AWAITING_PAYMENT, reason: transfer.failure_code, detail: transfer.failure_detail };
   })();
 }
 
