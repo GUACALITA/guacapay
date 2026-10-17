@@ -99,6 +99,8 @@ export const config = {
     privateKeyPath: process.env.OPEN_PAYMENTS_PRIVATE_KEY_PATH || '',
     receiverWalletAddress: process.env.OPEN_PAYMENTS_RECEIVER_WALLET_ADDRESS || '',
   },
+  // Key for encrypting consent tokens at rest. Required only when a grant is used.
+  grantEncryptionKey: process.env.GRANT_ENCRYPTION_KEY || '',
   // Used for links in emails (claim links). Local by default.
   baseUrl: (process.env.BASE_URL || 'http://localhost:3202').replace(/\/+$/, ''),
   // Used only for the return address Rapyd sends the payer back to. Rapyd rejects localhost here.

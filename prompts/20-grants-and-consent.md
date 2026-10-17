@@ -2,8 +2,19 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** code and tests written; **tests not run**, at the user's request. Verification is pending.
+**Files produced:** `backend/migrations/006-grants.sql`, `backend/src/grants/{seal,service,routes}.js`, `backend/test/grants.test.js`; edited `backend/src/providers/openpayments.js` (`startGrant`, `continueGrant`, no retry on creation calls), `backend/src/config.js` (`grantEncryptionKey`), `backend/src/app.js` (mounts `/api/grants`), `.env.example` (`GRANT_ENCRYPTION_KEY`, name only)
+
+**Choices made in this step:**
+- The grant asks for `outgoing-payment` access with a debit limit in the wallet's currency. Only wallets with two decimal places are accepted for now (`asset_scale_unsupported`).
+- Purposes are `link` (consent to move money) and `recurring` (the same, with an interval). The prompt's `send` purpose was not needed and was left out.
+- Consent tokens are encrypted with AES-256-GCM. The callback nonce is stored as a hash, and a grant can finish only once.
+- Revoking removes the stored token. Revoking at the wallet is not built yet.
+
+**Not verified yet:**
+- The `hash` check that the wallet sends back on finish (the spec's full interaction check). Only the nonce is checked.
+- A real approval in the test wallet, and a real `continue` call. Both are manual steps.
+- Expiry: the token expiry comes from the wallet's `expires_in` when present; no real wallet value has been seen yet.
 
 ## Prompt
 

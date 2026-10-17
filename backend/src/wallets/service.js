@@ -62,7 +62,13 @@ export function revokeWallet(userId, walletId, { db = getDb() } = {}) {
   if (!row) {
     throw new AppError('wallet_not_found', 404, 'Wallet not found.');
   }
-  db.prepare("UPDATE wallets SET status = 'revoked' WHERE id = ?").run(walletId);
+  db.transaction(() => {
+    db.prepare("UPDATE wallets SET status = 'revoked' WHERE id = ?").run(walletId);
+    // A revoked wallet's permissions are dropped too (decision: grants stop with their wallet).
+    db.prepare(
+      "UPDATE grants SET status = 'revoked', access_token_enc = NULL, continue_token_enc = NULL, continue_uri = NULL WHERE wallet_id = ?",
+    ).run(walletId);
+  })();
   return db.prepare('SELECT * FROM wallets WHERE id = ?').get(walletId);
 }
 

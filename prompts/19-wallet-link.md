@@ -8,7 +8,7 @@
 **Not done in this step:**
 - The frontend "My wallet" page. The setup guidance and the form belong to prompts 29 and 30.
 - The consent step. The wallet stays `pending` until prompt 20 calls `markWalletLinked`.
-- Revoking a wallet does not yet revoke its grants; prompt 20 adds that.
+- Revoking a wallet now also revokes its grants and removes their stored tokens (added with prompt 20).
 
 **Verification pending:** run `npm test` in `backend/`. Expected: the new `wallets.test.js` cases (add, list, duplicate, `wallet_in_use`, owner-only revoke, relink after revoke, consent-only linking, https-only, sign-in required).
 

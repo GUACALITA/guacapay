@@ -100,6 +100,38 @@ export async function withRetry(operation, fn) {
   }
 }
 
+// Runs a call that creates something on the network. It is not retried: repeating a grant request could create a second grant.
+async function callOnce(operation, fn) {
+  try {
+    return await fn();
+  } catch (err) {
+    throw toAppError(err, operation);
+  }
+}
+
+// Asks the wallet's authorization server for a grant. The wallet answers with an approval URL (interact.redirect)
+// and a continuation (continue.uri and continue.access_token.value), unless it grants without interaction.
+export async function startGrant({ authServer, access, finishUri, nonce }) {
+  const client = await getClient();
+  return callOnce('grant.request', () =>
+    client.grant.request(
+      { url: authServer },
+      {
+        access_token: { access },
+        interact: { start: ['redirect'], finish: { method: 'redirect', uri: finishUri, nonce } },
+      },
+    ),
+  );
+}
+
+// Finishes a grant after the user approved it, using the interaction reference the wallet sent back.
+export async function continueGrant({ continueUri, continueToken, interactRef }) {
+  const client = await getClient();
+  return callOnce('grant.continue', () =>
+    client.grant.continue({ url: continueUri, accessToken: continueToken }, { interact_ref: interactRef }),
+  );
+}
+
 // Reads a wallet's public document (no keys needed). Used before linking a wallet.
 export async function getWalletAddress(rawUrl, options = {}) {
   const url = checkWalletUrl(rawUrl, options);
