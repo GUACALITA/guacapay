@@ -1,8 +1,8 @@
 # guacapay
 
-Send money to an email address. The sender pays by card through Rapyd. The recipient receives a link, confirms their email with a code, and chooses a wallet address. The money is then transferred over Open Payments on the Interledger test network.
+Send money to an email address, using Interledger test wallets through Open Payments. The sender signs in with email and links a test wallet once. Money moves only between test wallets, and it stays on the test network (play money, no cash-out).
 
-**Status:** in development. Sign-in, payments up to the Rapyd checkout, webhooks, live status, claim links and email work in automated tests and in local containers. The money transfer is not built yet, so a claim returns 503 for now. No real money moves.
+**Status:** in development. Sign-in, payments, claim links, email, live status and the Open Payments client are being built in the order listed in `prompts/README.md`. The card rail (Rapyd) is kept in the code but is off by default (`PAYMENT_RAILS=openpayments`, decision 017). No real money moves.
 
 ## What you need
 
@@ -15,7 +15,7 @@ To run the project you also need:
 | Item | Required? | Where it comes from |
 |---|---|---|
 | Three secrets (`JWT_SECRET`, `HMAC_SECRET`, `GATEWAY_TOKEN`) | Yes | Generated on your machine (step 2 below) |
-| Rapyd sandbox keys (`RAPYD_ACCESS_KEY`, `RAPYD_SECRET_KEY`) | Yes | Rapyd sandbox dashboard, after you create an account |
+| Rapyd sandbox keys (`RAPYD_ACCESS_KEY`, `RAPYD_SECRET_KEY`) | Only if you set `PAYMENT_RAILS=rapyd` | Rapyd sandbox dashboard. Not needed for the test-wallet product. |
 | A public web address for Rapyd's webhooks (`RAPYD_WEBHOOK_URL`) | Yes | See "Public address" below |
 | Your app's public address (`BASE_URL`) | Yes for real payments | Same as above |
 | Open Payments test wallet values (`OPEN_PAYMENTS_*`) | No, not yet | Needed only for the money transfer, which is not built |

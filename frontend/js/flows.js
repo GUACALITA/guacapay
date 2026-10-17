@@ -41,6 +41,37 @@ export async function confirmClaim(client, { token, code, destinationWalletAddre
   return client.post('/api/claims/confirm', { token, code, destinationWalletAddress }, { auth: false });
 }
 
+// Creates the payment only. The payer chooses how to pay on the payment page.
+export async function createPaymentOnly(client, body, idempotencyKey) {
+  return client.post('/api/payments', body, { headers: { 'Idempotency-Key': idempotencyKey } });
+}
+
+export async function payWithAppBalance(client, paymentId) {
+  return client.post(`/api/payments/${encodeURIComponent(paymentId)}/pay-with-balance`);
+}
+
+export async function payWithTestnet(client, paymentId) {
+  return client.post(`/api/payments/${encodeURIComponent(paymentId)}/pay-with-testnet`);
+}
+
+export async function startRapydCheckout(client, paymentId) {
+  return client.post(`/api/payments/${encodeURIComponent(paymentId)}/checkout`);
+}
+
+export async function fetchBalances(client) {
+  const result = await client.get('/api/balance');
+  return result.balances;
+}
+
+// Recharges the app balance through Rapyd. Returns the Rapyd page to send the payer to.
+export async function startRecharge(client, amountCents, currency, idempotencyKey) {
+  return client.post(
+    '/api/balance/recharges',
+    { amount_cents: amountCents, currency },
+    { headers: { 'Idempotency-Key': idempotencyKey } },
+  );
+}
+
 export async function fetchPayment(client, paymentId) {
   return client.get(`/api/payments/${encodeURIComponent(paymentId)}`);
 }

@@ -18,6 +18,7 @@ process.env.DATABASE_PATH = join(tempDir, 'test.db');
 process.env.PAYMENT_MIN_CENTS = '100';
 process.env.PAYMENT_MAX_CENTS = '1000000';
 process.env.PAYMENT_CURRENCIES = 'USD';
+process.env.PAYMENT_RAILS = 'rapyd';
 process.env.BASE_URL = 'http://localhost:3202';
 process.env.RETURN_BASE_URL = 'https://return.guacapay.test';
 

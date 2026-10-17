@@ -1,6 +1,6 @@
 // Wiring for new.html: validates the form, creates the payment, and sends the payer to the checkout.
 import { api } from '../api.js';
-import { fetchCurrencies, startPayment } from '../flows.js';
+import { createPaymentOnly, fetchCurrencies } from '../flows.js';
 import { messageForError } from '../messages.js';
 import { newIdempotencyKey, validatePaymentForm } from '../payment-form.js';
 
@@ -57,9 +57,10 @@ async function onSubmit(event) {
   setBusy(true);
   showStatus('Starting payment…');
   try {
-    const result = await startPayment(api, body, lastAttempt.key);
+    const payment = await createPaymentOnly(api, body, lastAttempt.key);
     lastAttempt = null;
-    location.assign(result.redirectUrl ?? `payment.html?id=${encodeURIComponent(result.paymentId)}`);
+    // The payer chooses how to pay on the payment page: app balance, testnet, or Rapyd.
+    location.assign(`payment.html?id=${encodeURIComponent(payment.id)}`);
   } catch (error) {
     if (error.code === 'unauthorized' || error.code === 'session_expired') {
       $('form-section').hidden = true;

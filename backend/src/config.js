@@ -49,6 +49,14 @@ function readBoolean(name, fallback) {
 }
 
 const sandbox = readBoolean('RAPYD_SANDBOX', true);
+
+// Which rail moves money into the app. Open Payments (test network) is the only one in the product scope.
+// "rapyd" keeps the card checkout and recharge available for development (decision 017).
+const RAILS = ['openpayments', 'rapyd'];
+const paymentRails = process.env.PAYMENT_RAILS || 'openpayments';
+if (!RAILS.includes(paymentRails)) {
+  problems.push(`PAYMENT_RAILS must be one of: ${RAILS.join(', ')}`);
+}
 const minAmountCents = readInteger('PAYMENT_MIN_CENTS', 100, { min: 1, max: 1_000_000_000 });
 const maxAmountCents = readInteger('PAYMENT_MAX_CENTS', 1_000_000, { min: 1, max: 1_000_000_000 });
 
@@ -83,6 +91,14 @@ export const config = {
   port,
   frontendDir: join(here, '..', '..', 'frontend'),
   databasePath: process.env.DATABASE_PATH || join(here, '..', 'data', 'guacapay.db'),
+  paymentRails,
+  // Open Payments (test network). Optional at startup: the client reports them as missing when used.
+  openPayments: {
+    walletAddress: process.env.OPEN_PAYMENTS_WALLET_ADDRESS || '',
+    keyId: process.env.OPEN_PAYMENTS_KEY_ID || '',
+    privateKeyPath: process.env.OPEN_PAYMENTS_PRIVATE_KEY_PATH || '',
+    receiverWalletAddress: process.env.OPEN_PAYMENTS_RECEIVER_WALLET_ADDRESS || '',
+  },
   // Used for links in emails (claim links). Local by default.
   baseUrl: (process.env.BASE_URL || 'http://localhost:3202').replace(/\/+$/, ''),
   // Used only for the return address Rapyd sends the payer back to. Rapyd rejects localhost here.

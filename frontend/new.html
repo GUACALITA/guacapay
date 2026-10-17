@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/main.css">
   <script type="module" src="js/shell.js"></script>
   <script type="module" src="js/pages/new-payment.js"></script>
+  <script type="module" src="js/balance-panel.js"></script>
 </head>
 <body>
   <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
@@ -50,6 +51,17 @@
       </form>
 
       <p id="form-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+    <section class="card" id="balance-card" aria-labelledby="balance-title" hidden>
+      <h2 id="balance-title">Your app balance</h2>
+      <p id="balance-amount" class="status">Loading…</p>
+      <form id="recharge-form" novalidate>
+        <label for="recharge-amount">Amount to add (USD)</label>
+        <input id="recharge-amount" name="amount" type="text" inputmode="decimal" autocomplete="off">
+        <p class="field-error" id="recharge-error" hidden></p>
+        <button type="submit" id="recharge-submit">Recharge with Rapyd</button>
+      </form>
+      <p id="recharge-status" class="status" role="status" aria-live="polite"></p>
     </section>
   </main>
 

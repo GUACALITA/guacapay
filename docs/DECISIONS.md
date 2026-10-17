@@ -111,3 +111,19 @@ Each entry records a choice, its reason, and what it rules out. Numbers are stab
 - **Ruled out for now:** Rafiki (we would have to run an ILP node), a Guacalita node, and any Chimoney integration.
 - **Reason:** the team has not chosen to operate a payment network yet. Testnet keeps the transfer leg real without taking on that operation.
 - **Open:** who holds the money between collection and transfer, and which currency the testnet wallet uses (EUR, while the default accepted currency is USD). Both are recorded in `docs/OPEN_PAYMENTS.md`.
+- **Superseded in part by 017:** Rapyd is no longer on the money path.
+
+## 016 — App balance: recharges with Rapyd, payments from the balance, testnet option
+
+- **Balance:** each user has a balance per currency in the app, changed only by movements that are recorded in `ledger_entries`. A recharge is a payment to oneself (`purpose = 'recharge'`). When Rapyd confirms it, the amount is credited and the recharge is completed. A transfer (`purpose = 'transfer'`) paid from the balance debits it in the same transaction that moves the payment to `paid`.
+- **Refusal:** a payment from the balance is refused with `insufficient_balance` when the balance is too low. Nothing moves in that case.
+- **Testnet option:** shown on the payment page, but it returns `testnet_not_connected` until the Open Payments transfer exists. Open Payments does not expose a wallet balance, so the app cannot display the testnet balance; it can only attempt a payment.
+- **Superseded by 017:** the Rapyd recharge is switched off by default. The balance ledger stays.
+
+## 017 — Testnet-only scope: Open Payments is the only money rail
+
+- **Decision:** all money moves between Interledger test wallets through Open Payments. A user signs in with email and links a test wallet once, with consent. Rapyd is kept in the repository but is not on the money path. Set `PAYMENT_RAILS=rapyd` to turn the Rapyd checkout and recharge back on for development.
+- **Default:** `PAYMENT_RAILS=openpayments`. With that value, `POST /api/balance/recharges` and `POST /api/payments/:id/checkout` return `rail_not_available` (503) and create nothing.
+- **Ruled out:** an own Interledger node (Rafiki), a Guacalita node, Chimoney, and any cash-out. Money on the test network cannot leave it, because the test network uses play money.
+- **Reason:** the hackathon asks for one payment that works end to end over Open Payments. A bridge from card money to the test network would need a node, and the team chose not to run one.
+- **Consequence:** balances stay inside the test network. A user can pay other test wallets, not withdraw cash.

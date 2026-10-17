@@ -14,6 +14,7 @@ import { payWithBalance } from '../balance/pay.js';
 import { issueClaim } from '../claims/service.js';
 import { unconfiguredMailer } from '../auth/mailer.js';
 import { logger } from '../logger.js';
+import { requireCardRail } from '../rails.js';
 
 // Express 4 does not forward errors thrown inside async handlers; this does.
 const route = (handler) => (req, res, next) => {
@@ -83,6 +84,7 @@ export function createPaymentsRouter({ gateway = null, mailer = unconfiguredMail
   router.post(
     '/:id/checkout',
     route(async (req, res) => {
+      requireCardRail();
       if (!gateway) {
         throw new AppError('gateway_not_configured', 503, 'Payment service is not configured.');
       }

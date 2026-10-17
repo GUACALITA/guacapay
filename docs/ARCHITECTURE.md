@@ -2,6 +2,8 @@
 
 Written for: engineers who will change the code. Read `DECISIONS.md` for the reasons behind each choice.
 
+**Scope (decision 017):** all money moves between Interledger test wallets through Open Payments. The Rapyd gateway is kept but is not on the money path; it runs only when `PAYMENT_RAILS=rapyd`. The step-by-step flow below describes the earlier card-collection design and is being replaced by the two-transfer flow in `prompts/22-payment-flow-testnet.md`.
+
 ## Services
 
 | Service | Where it runs | Port | Role |

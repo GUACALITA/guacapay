@@ -7,6 +7,7 @@ import { getDb } from '../db.js';
 import { getBalances } from './service.js';
 import { createPayment, toPublicPayment } from '../payments/service.js';
 import { startCheckout } from '../payments/checkout.js';
+import { requireCardRail } from '../rails.js';
 
 const route = (handler) => (req, res, next) => {
   Promise.resolve()
@@ -29,6 +30,7 @@ export function createBalanceRouter({ gateway = null } = {}) {
   router.post(
     '/recharges',
     route(async (req, res) => {
+      requireCardRail();
       if (!gateway) {
         throw new AppError('gateway_not_configured', 503, 'Payment service is not configured.');
       }

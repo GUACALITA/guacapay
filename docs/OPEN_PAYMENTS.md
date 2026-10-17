@@ -1,5 +1,7 @@
 # Open Payments on the Interledger test network
 
+**Scope (decision 017):** this is the only money rail in the product. Money moves between test wallets, in play money, and cannot be converted to cash. Rapyd is not part of this flow.
+
 Status: **partly answered.** The sender side is confirmed. Two items are still open before the test transfer: a receiver wallet, and the testnet limits.
 
 Sources checked on 2026-10-16:

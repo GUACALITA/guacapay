@@ -32,6 +32,7 @@ test('migrations apply once and are not re-applied', () => {
     '001-initial.sql',
     '002-payments-message-idempotency.sql',
     '003-processed-events.sql',
+    '004-balances.sql',
   ]);
   assert.deepEqual(runMigrations(getDb()), []);
 
@@ -45,7 +46,7 @@ test('all tables exist with the expected columns', () => {
     otp_codes: ['id', 'email', 'code_hash', 'expires_at', 'attempts', 'used_at', 'created_at'],
     payments: [
       'id', 'sender_id', 'recipient_email', 'amount_cents', 'currency',
-      'status', 'rapyd_checkout_id', 'created_at', 'updated_at', 'message', 'idempotency_key',
+      'status', 'rapyd_checkout_id', 'created_at', 'updated_at', 'message', 'idempotency_key', 'purpose',
     ],
     claims: ['id', 'payment_id', 'token_hash', 'status', 'destination', 'claimed_at', 'expires_at'],
     payment_events: ['id', 'payment_id', 'type', 'payload_json', 'created_at'],
