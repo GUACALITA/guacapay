@@ -3,6 +3,7 @@ import { logger } from '../logger.js';
 import { reconcilePending } from './reconcile.js';
 import { issuePendingClaims, resumePayouts } from '../claims/service.js';
 import { resumePayIns } from '../transfers/payments.js';
+import { resumeRequests } from '../requests/service.js';
 
 export function startPaymentPoller({ gateway, mailer, intervalMs = 60 * 1000 }) {
   let running = false;
@@ -18,8 +19,13 @@ export function startPaymentPoller({ gateway, mailer, intervalMs = 60 * 1000 }) 
       // Transfers still pending from an earlier request, in the order money moves: pay-in, then payout.
       const payIns = await resumePayIns();
       const payouts = await resumePayouts({ mailer });
-      if (payIns.settled + payouts.settled > 0) {
-        logger.info('poll settled transfers', { payIns: payIns.settled, payouts: payouts.settled });
+      const requests = await resumeRequests();
+      if (payIns.settled + payouts.settled + requests.settled > 0) {
+        logger.info('poll settled transfers', {
+          payIns: payIns.settled,
+          payouts: payouts.settled,
+          requests: requests.settled,
+        });
       }
       const claims = await issuePendingClaims({ mailer });
       if (claims.issued > 0) {

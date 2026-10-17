@@ -2,8 +2,24 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** code and tests written; **tests not run**, at the user's request. Verification is pending.
+**Files produced:** `backend/migrations/010-requests.sql`, `backend/src/requests/{service,qr,routes}.js`, `backend/test/requests.test.js`; edited `backend/src/transfers/engine.js` (`requestId`), `backend/src/payments/poller.js` (`resumeRequests`), `backend/src/app.js` (`/api/requests`), `backend/package.json` and `backend/package-lock.json` (`qrcode` 1.5.4; dev: `jsqr` 1.4.0, `pngjs` 7.0.0)
+
+**Choices made in this step:**
+- The migration is 010, because 009 is the custody ledger.
+- The request payment is a direct transfer from the payer's wallet to the requester's wallet. It has no custody step and no claim. It is recorded as a transfer with `request_id` set and `payment_id` NULL, not as a `payments` row: the payment states have no path to `completed` without a claim.
+- Request transfers use direction `in`, because the transfer table allows only `in` and `out`. This is a naming compromise: `in` is not custody for these rows.
+- The token is not in the path: `GET /api/requests/public?token=` and `POST /api/requests/public/pay` (token in body). Request paths are written to the log, so a token in the path would leak into it.
+- The QR is returned once, in the creation response, to the owner. The token is stored only as a keyed hash, so the link and its QR cannot be produced again later.
+- A failed payment clears the claim on the request, so another payer can try. A pending payment blocks other payers until it ends.
+- `users.first_name` is added and returned as `owner_first_name`. Nothing sets it yet, so it is null until a profile exists.
+
+**Not verified yet:**
+- The `qrcode` package is pinned but not run. The lockfile was regenerated in a Node container without touching `node_modules`.
+- No frontend page was written; the prompt's steps do not list one.
+- Real payment between two test wallets (manual check).
+
+## Prompt
 
 ## Prompt
 

@@ -15,6 +15,7 @@ import { createGrantsRouter } from './grants/routes.js';
 import { issueClaim } from './claims/service.js';
 import { requireGatewayToken } from './auth/gateway-token.js';
 import { createCustodyRouter } from './custody/routes.js';
+import { createRequestsRouter } from './requests/routes.js';
 
 // Turns an async handler's rejection into a call to next(err).
 const route = (handler) => (req, res, next) => {
@@ -101,6 +102,7 @@ export function createApp({
   app.use('/api/claims', createClaimsRouter({ mailer, transfer }));
   // Operator only: the gateway token is required, a user's sign-in is not enough.
   app.use('/api/custody', createCustodyRouter({ gatewayToken }));
+  app.use('/api/requests', createRequestsRouter());
 
   // Called only by the gateway, with the shared token. Always answers 200 for a well-formed event,
   // including unknown or already-applied ones, so the gateway does not keep retrying.
