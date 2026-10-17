@@ -2,8 +2,15 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** executed 2026-10-17. Backend 134/134 pass with networking disabled, including 9 new client tests (none skipped). Manual check: the sender wallet's public document was read from inside the container through the new module (EUR, scale 2, both servers present), with no key sent.
+**Files produced:** `backend/src/providers/openpayments.js` (the only file that imports the SDK), `backend/test/openpayments.test.js`; edited `backend/src/config.js` (`openPayments` block, optional at startup), `.env.example` (`OPEN_PAYMENTS_RECEIVER_WALLET_ADDRESS`, names only)
+
+**Deviations from the prompt:**
+- The configuration is optional at startup. The client reports missing values when it is used, so the app still starts without them.
+- `resetClient()` was added for tests and for a key change.
+- `getWalletAddress` accepts `allowHttp` only for tests that reach a local fake server. Production calls always require https.
+
+**Not verified yet:** the retry on a real network error, which is tested only against a closed local port.
 
 ## Prompt
 
