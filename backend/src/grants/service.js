@@ -35,7 +35,7 @@ function ownedWallet(userId, walletId, db) {
 }
 
 // Starts consent. Returns the approval URL the user must open in their wallet. The grant stays pending until it is finished.
-export async function requestConsent({ userId, walletId, purpose, limitCents, interval, db = getDb(), deps = defaultDeps }) {
+export async function requestConsent({ userId, walletId, purpose, limitCents, interval, returnTo = null, db = getDb(), deps = defaultDeps }) {
   if (!GRANT_PURPOSES.includes(purpose)) {
     throw new AppError('invalid_purpose', 400, 'Purpose must be link or recurring.');
   }
@@ -57,7 +57,8 @@ export async function requestConsent({ userId, walletId, purpose, limitCents, in
 
   const grantId = randomUUID();
   const nonce = randomBytes(16).toString('hex');
-  const finishUri = `${config.baseUrl}/api/grants/callback?grant=${grantId}&nonce=${nonce}`;
+  const returnToParam = returnTo ? `&return_to=${encodeURIComponent(String(returnTo))}` : '';
+  const finishUri = `${config.baseUrl}/api/grants/callback?grant=${grantId}&nonce=${nonce}${returnToParam}`;
   const access = buildAccess(wallet.wallet_url, document.assetCode, limitCents, interval || null);
 
   const pending = await deps.startGrant({ authServer: document.authServer, access, finishUri, nonce });

@@ -228,3 +228,87 @@ img {
   min-height: 44px;
   line-height: 44px;
 }
+
+/* ── Payment page ── */
+.payment-hero {
+  text-align: center;
+  padding: 32px 16px 24px;
+}
+
+.payment-amount {
+  font-size: clamp(2.25rem, 10vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+
+.payment-to {
+  margin: 0 0 16px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 5px 18px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Status colours — default: neutral */
+.status-badge {
+  background: var(--border);
+  color: var(--fg);
+}
+.status-badge[data-status="created"],
+.status-badge[data-status="awaiting_payment"] {
+  background: var(--banner-bg);
+  color: var(--banner-fg);
+}
+.status-badge[data-status="paid"],
+.status-badge[data-status="claimable"],
+.status-badge[data-status="claimed"],
+.status-badge[data-status="completed"] {
+  background: #d4edda;
+  color: #0b4d23;
+}
+.status-badge[data-status="failed"],
+.status-badge[data-status="expired"] {
+  background: #fdeaeb;
+  color: #a4262c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .status-badge[data-status="paid"],
+  :root:not([data-theme="light"]) .status-badge[data-status="claimable"],
+  :root:not([data-theme="light"]) .status-badge[data-status="claimed"],
+  :root:not([data-theme="light"]) .status-badge[data-status="completed"] {
+    background: #0d2e1e;
+    color: #2fb585;
+  }
+  :root:not([data-theme="light"]) .status-badge[data-status="failed"],
+  :root:not([data-theme="light"]) .status-badge[data-status="expired"] {
+    background: #2a0e10;
+    color: #ff8a8f;
+  }
+}
+
+/* QR block */
+.qr-block {
+  text-align: center;
+  padding: 24px 16px 20px;
+}
+
+.qr-block img {
+  width: 200px;
+  height: 200px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  display: block;
+  margin: 0 auto;
+}
+
+.qr-block p {
+  margin: 10px 0 0;
+  font-size: 0.875rem;
+}

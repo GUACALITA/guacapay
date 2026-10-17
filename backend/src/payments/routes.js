@@ -1,5 +1,6 @@
 // HTTP routes for payments: /api/payments. Every route requires a signed-in user.
 import { Router } from 'express';
+import QRCode from 'qrcode';
 import { config } from '../config.js';
 import { AppError } from '../errors.js';
 import { requireAuth } from '../auth/middleware.js';
@@ -87,6 +88,19 @@ export function createPaymentsRouter({ gateway = null, mailer = unconfiguredMail
     '/:id',
     route((req, res) => {
       res.json(toPublicPayment(getPaymentForUser(req.params.id, req.user.id)));
+    }),
+  );
+
+  // Returns an SVG QR code for the payment page URL. The QR is served same-origin, so the browser can load it.
+  router.get(
+    '/:id/qr',
+    route(async (req, res) => {
+      const payment = getPaymentForUser(req.params.id, req.user.id);
+      const pageUrl = `${config.baseUrl}/payment.html?id=${encodeURIComponent(payment.id)}`;
+      const svg = await QRCode.toString(pageUrl, { type: 'svg', margin: 2, width: 200 });
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'private, max-age=300');
+      res.send(svg);
     }),
   );
 

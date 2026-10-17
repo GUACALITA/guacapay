@@ -40,8 +40,12 @@ export function createGrantsRouter({ deps } = {}) {
         interactRef: req.query.interact_ref,
         deps,
       });
-      // Back to the page that links wallets, so the approved wallet shows as linked.
-      res.redirect(`${config.baseUrl}/new.html?grant=${encodeURIComponent(result.id)}&status=granted`);
+      // Redirect to return_to if it is the same origin, otherwise fall back to new.html.
+      const raw = req.query.return_to ? String(req.query.return_to) : null;
+      const sameOrigin = raw && (raw.startsWith('/') || raw.startsWith(config.baseUrl));
+      const base = sameOrigin ? (raw.startsWith('/') ? `${config.baseUrl}${raw}` : raw) : `${config.baseUrl}/new.html`;
+      const sep = base.includes('?') ? '&' : '?';
+      res.redirect(`${base}${sep}grant=${encodeURIComponent(result.id)}&status=granted`);
     }),
   );
 

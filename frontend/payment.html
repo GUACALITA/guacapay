@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Payment status · guacapay</title>
+  <title>Payment · guacapay</title>
   <link rel="stylesheet" href="css/main.css">
   <script type="module" src="js/shell.js"></script>
   <script type="module" src="js/pages/payment.js"></script>
@@ -19,31 +19,36 @@
   </header>
 
   <main class="page">
-    <h1>Payment status</h1>
 
     <section class="card" id="signed-out" hidden>
       <p>Sign in to see this payment.</p>
       <p><a href="index.html">Go to sign in</a></p>
     </section>
 
-    <section class="card" id="status-section" aria-labelledby="status-title" hidden>
-      <h2 id="status-title">Status</h2>
-      <p id="status-text" class="status" role="status" aria-live="polite"></p>
-      <p id="payment-summary" class="muted"></p>
+    <section class="card payment-hero" id="status-section" hidden>
+      <div class="payment-amount" id="payment-amount"></div>
+      <p class="payment-to muted" id="payment-to"></p>
+      <span class="status-badge" id="status-badge" role="status" aria-live="polite"></span>
+    </section>
+
+    <section class="card qr-block" id="qr-section" hidden>
+      <img id="qr-img" src="" alt="QR code for this payment" width="200" height="200">
+      <p class="muted">Scan to open this payment</p>
     </section>
 
     <section class="card" id="pay-section" aria-labelledby="pay-title" hidden>
       <h2 id="pay-title">Pay from my wallet</h2>
-      <p class="muted" id="pay-empty" hidden>You have no linked wallet yet. <a href="new.html">Add and link a test wallet</a> first.</p>
+      <p class="muted" id="pay-empty" hidden></p>
       <form id="pay-form" novalidate>
         <label for="pay-wallet">Wallet to pay from</label>
         <select id="pay-wallet" name="wallet"></select>
-        <button type="submit" id="pay-wallet-submit">Pay from my wallet</button>
+        <button type="submit" id="pay-wallet-submit">Pay now</button>
       </form>
       <p id="pay-status" class="status" role="status" aria-live="polite"></p>
     </section>
 
     <p id="page-error" class="field-error" role="alert" hidden></p>
+
   </main>
 
   <footer class="site-footer">

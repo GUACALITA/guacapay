@@ -7,20 +7,23 @@ import { formatCents } from '../money.js';
 
 const $ = (id) => document.getElementById(id);
 
+const FINAL_STATUSES = new Set(['completed', 'failed', 'expired']);
+
 function showPageError(text) {
   $('page-error').textContent = text;
   $('page-error').hidden = false;
 }
 
 function renderStatus(status) {
-  $('status-text').textContent = messageForStatus(status);
-  // Paying only makes sense while the payment is still waiting for the first transfer.
+  const badge = $('status-badge');
+  badge.textContent = messageForStatus(status);
+  badge.dataset.status = status;
   $('pay-section').hidden = status !== 'created';
 }
 
 function renderSummary(payment) {
-  $('payment-summary').textContent =
-    `${formatCents(payment.amount_cents, payment.currency)} to ${payment.recipient_email}`;
+  $('payment-amount').textContent = formatCents(payment.amount_cents, payment.currency);
+  $('payment-to').textContent = `To ${payment.recipient_email}`;
 }
 
 function setPayBusy(busy) {
@@ -28,21 +31,47 @@ function setPayBusy(busy) {
   $('pay-wallet-submit').disabled = busy;
 }
 
-// Lists only the wallets that finished consent. Returns false when there is none to pay from.
-// Only wallets that hold the payment's currency can pay it. Others are not offered.
+async function loadQR(paymentId) {
+  try {
+    const resp = await fetch(`/api/payments/${paymentId}/qr`, {
+      headers: { Authorization: `Bearer ${api.getToken()}` },
+    });
+    if (!resp.ok) return;
+    const svg = await resp.text();
+    // Encode as data URI — CSP allows data: in img-src.
+    const b64 = btoa(unescape(encodeURIComponent(svg)));
+    $('qr-img').src = `data:image/svg+xml;base64,${b64}`;
+    $('qr-section').hidden = false;
+  } catch {
+    // QR is optional; silently skip on error.
+  }
+}
+
+// Lists only wallets that hold the payment's currency. Others are not offered.
 async function loadWallets(currency) {
-  const linked = (await fetchWallets(api)).filter((wallet) => wallet.status === 'linked');
-  const wallets = linked.filter((wallet) => wallet.asset_code === currency);
-  $('pay-wallet').replaceChildren(...wallets.map((wallet) => new Option(`${wallet.wallet_url} (${wallet.asset_code})`, wallet.id)));
+  const linked = (await fetchWallets(api)).filter((w) => w.status === 'linked');
+  const wallets = linked.filter((w) => w.asset_code === currency);
+  $('pay-wallet').replaceChildren(...wallets.map((w) => new Option(`${w.wallet_url} (${w.asset_code})`, w.id)));
   if (wallets.length === 0) {
     const link = document.createElement('a');
     link.href = 'new.html';
     link.textContent = `Add a ${currency} wallet`;
-    $('pay-empty').replaceChildren(`No linked wallet holds ${currency}. `, link, ' first.');
+    $('pay-empty').replaceChildren(`No linked wallet holds ${currency}. `, link, '.');
   }
   $('pay-empty').hidden = wallets.length > 0;
   $('pay-form').hidden = wallets.length === 0;
   return wallets.length > 0;
+}
+
+async function renewConsent(walletId) {
+  const returnTo = location.pathname + location.search;
+  const resp = await fetch(`/api/wallets/${walletId}/renew-consent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${api.getToken()}` },
+    body: JSON.stringify({ return_to: returnTo, limit_cents: 1_000_000 }),
+  });
+  const data = await resp.json();
+  return data.approvalUrl ?? null;
 }
 
 function wirePayForm(paymentId) {
@@ -50,11 +79,19 @@ function wirePayForm(paymentId) {
     event.preventDefault();
     setPayBusy(true);
     $('pay-status').textContent = 'Paying from your wallet…';
+    const walletId = $('pay-wallet').value;
     try {
-      const outcome = await payWithWallet(api, paymentId, $('pay-wallet').value);
+      const outcome = await payWithWallet(api, paymentId, walletId);
       renderStatus(outcome.status);
+      if (outcome.reason === 'no_active_grant') {
+        $('pay-status').textContent = 'Wallet authorization expired. Redirecting to re-authorize…';
+        const approvalUrl = await renewConsent(walletId);
+        if (approvalUrl) { window.location.href = approvalUrl; return; }
+      }
       $('pay-status').textContent =
-        outcome.status === 'awaiting_payment' ? 'The transfer is still running. This page will update when it finishes.' : '';
+        outcome.status === 'awaiting_payment'
+          ? 'The transfer is still running. This page will update when it finishes.'
+          : '';
     } catch (error) {
       $('pay-status').textContent = messageForError(error);
     } finally {
@@ -64,23 +101,16 @@ function wirePayForm(paymentId) {
 }
 
 async function start() {
-  // The ID comes from the URL. It is used to ask for the payment, and never shown on the page.
   const paymentId = new URLSearchParams(location.search).get('id');
-
-  if (!paymentId) {
-    showPageError('No payment selected.');
-    return;
-  }
-  if (!api.isSignedIn()) {
-    $('signed-out').hidden = false;
-    return;
-  }
+  if (!paymentId) { showPageError('No payment selected.'); return; }
+  if (!api.isSignedIn()) { $('signed-out').hidden = false; return; }
 
   try {
     const payment = await fetchPayment(api, paymentId);
     $('status-section').hidden = false;
     renderSummary(payment);
     renderStatus(payment.status);
+    if (!FINAL_STATUSES.has(payment.status)) loadQR(paymentId);
     if (payment.status === 'created' && (await loadWallets(payment.currency))) wirePayForm(paymentId);
   } catch (error) {
     if (error.code === 'unauthorized' || error.code === 'session_expired') {
