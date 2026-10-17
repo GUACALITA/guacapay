@@ -149,6 +149,13 @@ export async function continueGrant({ continueUri, continueToken, interactRef })
   );
 }
 
+// Renews an access token before it expires, so a payment does not need a new approval.
+export async function rotateAccessToken({ manageUrl, accessToken }) {
+  assertAllowedHost(manageUrl);
+  const client = await getClient();
+  return callOnce('token.rotate', () => client.token.rotate({ url: manageUrl, accessToken }));
+}
+
 // Asks for a permission that the wallet grants without a user step (quotes, incoming payments).
 // Returns the access token, or nothing when the wallet asks for interaction.
 export async function requestNonInteractiveGrant({ authServer, access }) {

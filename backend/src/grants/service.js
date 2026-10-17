@@ -3,7 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { getDb } from '../db.js';
 import { config } from '../config.js';
 import { AppError } from '../errors.js';
-import { continueGrant, getWalletAddress, startGrant } from '../providers/openpayments.js';
+import { continueGrant, getWalletAddress, rotateAccessToken, startGrant } from '../providers/openpayments.js';
 import { markWalletLinked } from '../wallets/service.js';
 import { open, seal } from './seal.js';
 
@@ -70,7 +70,7 @@ export async function requestConsent({ userId, walletId, purpose, limitCents, in
     }
     db.transaction(() => {
       insertGrant(db, { grantId, walletId, purpose, access, limitCents, interval, nonce, continueUri: null, continueTokenEnc: null });
-      storeAccessToken(db, grantId, pending.access_token.value, pending.access_token.expires_in);
+      storeAccessToken(db, grantId, pending.access_token.value, pending.access_token.expires_in, pending.access_token.manage);
       if (purpose === 'link') markWalletLinked(walletId, { db });
     })();
     return { id: grantId, status: GRANT_STATUS.GRANTED, approvalUrl: null };
@@ -110,12 +110,23 @@ function insertGrant(db, row) {
   );
 }
 
-function storeAccessToken(db, grantId, token, expiresInSeconds) {
+function storeAccessToken(db, grantId, token, expiresInSeconds, manageUrl) {
   const expiresAt = Number.isFinite(expiresInSeconds) ? new Date(Date.now() + expiresInSeconds * 1000).toISOString() : null;
   db.prepare(
-    `UPDATE grants SET status = ?, access_token_enc = ?, granted_at = ?, expires_at = ?, continue_token_enc = NULL, continue_uri = NULL
+    `UPDATE grants SET status = ?, access_token_enc = ?, granted_at = ?, expires_at = ?, access_token_manage = ?,
+       continue_token_enc = NULL, continue_uri = NULL
      WHERE id = ?`,
-  ).run(GRANT_STATUS.GRANTED, seal(token), iso(), expiresAt, grantId);
+  ).run(GRANT_STATUS.GRANTED, seal(token), iso(), expiresAt, manageUrl ?? null, grantId);
+}
+
+function replaceAccessToken(db, grantId, token) {
+  const expiresAt = Number.isFinite(token.expires_in) ? new Date(Date.now() + token.expires_in * 1000).toISOString() : null;
+  db.prepare('UPDATE grants SET access_token_enc = ?, expires_at = ?, access_token_manage = ? WHERE id = ?').run(
+    seal(token.value),
+    expiresAt,
+    token.manage ?? null,
+    grantId,
+  );
 }
 
 // Finishes consent after the wallet sent the user back with interact_ref. The nonce must match, and a grant finishes once.
@@ -142,7 +153,7 @@ export async function finishConsent({ grantId, nonce, interactRef, db = getDb(),
   }
 
   db.transaction(() => {
-    storeAccessToken(db, grantId, continued.access_token.value, continued.access_token.expires_in);
+    storeAccessToken(db, grantId, continued.access_token.value, continued.access_token.expires_in, continued.access_token.manage);
     if (row.purpose === 'link') markWalletLinked(row.wallet_id, { db });
   })();
 
@@ -150,7 +161,10 @@ export async function finishConsent({ grantId, nonce, interactRef, db = getDb(),
 }
 
 // Returns a usable access token for a granted permission, or refuses. Expired grants are marked expired.
-export function getAccessToken(grantId, { db = getDb(), now = Date.now() } = {}) {
+// A token close to expiry is rotated first, so payments keep working without a new approval.
+const ROTATE_BEFORE_MS = 120_000;
+
+export async function getAccessToken(grantId, { db = getDb(), now = Date.now(), rotate = rotateAccessToken } = {}) {
   const row = db.prepare('SELECT * FROM grants WHERE id = ?').get(grantId);
   if (!row) throw new AppError('grant_not_found', 404, 'Grant not found.');
   if (row.status !== GRANT_STATUS.GRANTED || !row.access_token_enc) {
@@ -160,7 +174,13 @@ export function getAccessToken(grantId, { db = getDb(), now = Date.now() } = {})
     db.prepare("UPDATE grants SET status = 'expired', access_token_enc = NULL WHERE id = ?").run(grantId);
     throw new AppError('grant_expired', 409, 'This permission has expired. Approve it again.');
   }
-  return open(row.access_token_enc);
+  const current = open(row.access_token_enc);
+  if (row.access_token_manage && row.expires_at && Date.parse(row.expires_at) - now < ROTATE_BEFORE_MS) {
+    const renewed = await rotate({ manageUrl: row.access_token_manage, accessToken: current });
+    replaceAccessToken(db, grantId, renewed);
+    return renewed.value;
+  }
+  return current;
 }
 
 // The owner revokes a permission. The stored token is removed. Revocation at the wallet is a separate step, not yet built.

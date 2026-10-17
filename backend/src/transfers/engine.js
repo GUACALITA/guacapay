@@ -114,7 +114,7 @@ async function execute(transfer, deps, db) {
   if (!grant) {
     throw new AppError('no_active_grant', 409, 'The sending wallet has no active permission.');
   }
-  const senderToken = getAccessToken(grant.id, { db, now: deps.now() });
+  const senderToken = await getAccessToken(grant.id, { db, now: deps.now() });
 
   const senderDoc = await deps.readWallet(sender.wallet_url);
   const receiverDoc = await deps.readWallet(transfer.to_wallet_url);
