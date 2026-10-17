@@ -180,6 +180,10 @@ function failClaim(payment, claim, address, reason, { db, now }) {
   })();
 }
 
+function normalizeWalletUrl(url) {
+  return String(url ?? '').trim().toLowerCase().replace(/\/+$/, '');
+}
+
 // Step 2 of claiming: checks the code and destination, then runs the payout (custody to recipient) once.
 // Outcomes: completed, failed (the payout was attempted and did not go through), or processing (it is still running;
 // the claim stays in progress and resumePayouts settles it).
@@ -194,6 +198,10 @@ export async function confirmClaim({ token, code, destination, transfer = payout
 
   // Both checks come before the code is used, so a typo in the wallet address does not spend the code.
   const address = validateDestination(destination);
+  const senderWallets = db.prepare('SELECT wallet_url FROM wallets WHERE user_id = ?').all(payment.sender_id).map((w) => normalizeWalletUrl(w.wallet_url));
+  if (senderWallets.includes(normalizeWalletUrl(address))) {
+    throw new AppError('destination_is_sender', 400, 'Choose a wallet that is not the sender’s own account.');
+  }
   // Checked before any money moves, and before the code is used: the custody ledger must hold this payment's amount.
   assertCustodyHolds(payment.id, { db });
   verifyLoginCode(payment.recipient_email, code, { db, now });

@@ -16,6 +16,7 @@ const INCOMING_LIFETIME_MS = 10 * 60 * 1000;
 // outgoing_state_unknown: the payment may exist, so it stays pending until someone checks it on the network.
 const RETRYABLE = new Set([
   'openpayments_unavailable',
+  'openpayments_rejected',
   'leg_timeout',
   'grant_expired',
   'no_active_grant',
@@ -179,7 +180,9 @@ async function execute(transfer, deps, db) {
   // Leg 3: outgoing payment from the sender. The leg is stored before the call. If a retry finds it without an
   // answer, the payment may or may not exist, so the engine stops and does not send it a second time.
   let outgoingLeg = legFor(db, transfer.id, 'outgoing');
-  if (!outgoingLeg) {
+  // A leg the network refused has no remote ID, so nothing was created and it can be tried again.
+  const refused = outgoingLeg && outgoingLeg.status === LEG.FAILED && !outgoingLeg.remote_id;
+  if (!outgoingLeg || refused) {
     saveLeg(db, transfer.id, 'outgoing', null, LEG.CREATED);
     try {
       const outgoing = await deps.createOutgoing({

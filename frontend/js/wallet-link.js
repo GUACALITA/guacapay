@@ -9,7 +9,7 @@ const STATUS_TEXT = Object.freeze({
   revoked: 'Revoked',
 });
 
-const DEFAULT_LINK_LIMIT_CENTS = 100000000;
+const DEFAULT_LINK_LIMIT_CENTS = 1000;
 
 // The element ids the form expects. Both pages provide them.
 const IDS = Object.freeze({

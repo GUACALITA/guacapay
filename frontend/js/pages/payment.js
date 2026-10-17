@@ -64,15 +64,12 @@ async function loadWallets(currency) {
   return wallets.length > 0;
 }
 
-// The grant limit is spent across payments, so it must cover more than one payment, not just this one.
-const GRANT_LIMIT_CENTS = 100000000;
-
-async function renewConsent(walletId) {
+async function renewConsent(walletId, limitCents) {
   const returnTo = location.pathname + location.search;
   const resp = await fetch(`/api/wallets/${walletId}/renew-consent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${api.getToken()}` },
-    body: JSON.stringify({ return_to: returnTo, limit_cents: GRANT_LIMIT_CENTS }),
+    body: JSON.stringify({ return_to: returnTo, limit_cents: limitCents }),
   });
   const data = await resp.json();
   return data.approvalUrl ?? null;
@@ -91,7 +88,7 @@ function wirePayForm(paymentId, amountCents) {
       const needsConsent = ['no_active_grant', 'grant_expired', 'openpayments_rejected'].includes(outcome.reason);
       if (needsConsent) {
         $('pay-status').textContent = 'Redirecting to Interledger to authorize the payment…';
-        const approvalUrl = await renewConsent(walletId);
+        const approvalUrl = await renewConsent(walletId, amountCents);
         if (approvalUrl) { window.location.href = approvalUrl; return; }
       }
       if (outcome.status === 'awaiting_payment') {
