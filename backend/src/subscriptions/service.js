@@ -311,5 +311,5 @@ export function listSubscriptions(userId, { db = getDb() } = {}) {
   return db
     .prepare('SELECT * FROM subscriptions WHERE payee_user_id = ? OR payer_user_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 100')
     .all(userId, userId)
-    .map(memberView);
+    .map((row) => ({ ...memberView(row), role: row.payee_user_id === userId ? 'payee' : 'payer' }));
 }

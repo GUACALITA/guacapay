@@ -52,7 +52,70 @@ const ERROR_TEXT = Object.freeze({
   provider_rejected: 'The payment could not be started. Check the details and try again.',
 });
 
+const REQUEST_STATUS_TEXT = Object.freeze({
+  open: 'Open. Waiting for someone to pay.',
+  paid: 'Paid.',
+  closed: 'Closed.',
+  expired: 'Expired. Nobody can pay it now.',
+});
+
+const SUBSCRIPTION_STATUS_TEXT = Object.freeze({
+  pending: 'Waiting for approval in the wallet.',
+  active: 'Active. Charged each period.',
+  paused: 'Paused after three failed charges.',
+  cancelled: 'Cancelled.',
+});
+
+const POOL_STATUS_TEXT = Object.freeze({
+  forming: 'Gathering members.',
+  active: 'Collecting contributions.',
+  closing: 'Paying out.',
+  completed: 'Completed.',
+  cancelled: 'Cancelled.',
+});
+
+const MOVEMENT_STATUS_TEXT = Object.freeze({
+  pending: 'In progress. This may take a few minutes.',
+  completed: 'Completed.',
+  failed: 'Did not go through.',
+});
+
+const SUBSCRIPTION_ROLE_TEXT = Object.freeze({
+  payee: 'You receive these charges',
+  payer: 'You pay these charges',
+});
+
+const INTERVAL_TEXT = Object.freeze({
+  P1D: 'daily',
+  P1W: 'weekly',
+  P1M: 'monthly',
+});
+
 const FALLBACK = 'Something went wrong. Please try again.';
+
+export function messageForRequest(status) {
+  return REQUEST_STATUS_TEXT[status] ?? 'Status unknown. Refresh the page.';
+}
+
+export function messageForSubscription(status) {
+  return SUBSCRIPTION_STATUS_TEXT[status] ?? 'Status unknown. Refresh the page.';
+}
+
+export function messageForPool(status) {
+  return POOL_STATUS_TEXT[status] ?? 'Status unknown. Refresh the page.';
+}
+
+export function messageForMovement(status) {
+  return MOVEMENT_STATUS_TEXT[status] ?? 'Status unknown. Refresh the page.';
+}
+
+export function messageForRole(role) {
+  return SUBSCRIPTION_ROLE_TEXT[role] ?? '';
+}
+
+export function messageForInterval(interval) {
+  return INTERVAL_TEXT[interval] ?? 'on a schedule';
+}
 
 export function messageForClaimResult(status) {
   return CLAIM_RESULT_TEXT[status] ?? 'Status unknown. Contact the sender.';

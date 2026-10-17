@@ -202,3 +202,29 @@ button.secondary {
   padding: 16px;
   text-align: center;
 }
+
+/* Dashboard (prompt 30): long wallet addresses and links wrap instead of forcing a horizontal scroll at 360 px. */
+.wrap {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.section-body ul {
+  padding-left: 1.25rem;
+}
+
+.section-body li {
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+
+.button-link {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+}

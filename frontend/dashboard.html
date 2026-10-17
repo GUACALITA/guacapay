@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Home · guacapay</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script type="module" src="js/shell.js"></script>
+  <script type="module" src="js/pages/dashboard.js"></script>
+</head>
+<body>
+  <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
+
+  <header class="site-header">
+    <a class="brand" href="dashboard.html">guacapay</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="dashboard.html" aria-current="page">Home</a>
+      <a href="new.html">Send</a>
+      <a href="wallets.html">Wallets</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <h1>Home</h1>
+
+    <section class="card" id="signed-out" hidden>
+      <p>Sign in to see your account.</p>
+      <p><a href="index.html">Go to sign in</a></p>
+    </section>
+
+    <div id="dashboard" hidden>
+      <!-- My wallet -->
+      <section class="card" aria-labelledby="wallet-title">
+        <h2 id="wallet-title">My wallet</h2>
+        <div class="section-body" id="wallet-body" aria-live="polite"></div>
+        <p class="section-error field-error" id="wallet-error" role="alert" hidden></p>
+      </section>
+
+      <!-- My money -->
+      <section class="card" aria-labelledby="money-title">
+        <h2 id="money-title">My money</h2>
+        <p class="muted">Test money on the test network. It cannot be turned into cash.</p>
+        <div class="section-body" id="money-body" aria-live="polite"></div>
+        <p class="section-error field-error" id="money-error" role="alert" hidden></p>
+      </section>
+
+      <!-- Send -->
+      <section class="card" aria-labelledby="send-title">
+        <h2 id="send-title">Send</h2>
+        <p class="muted">Send money to an email address. The recipient claims it with a link.</p>
+        <p><a class="button-link" href="new.html">Send money</a></p>
+      </section>
+
+      <!-- Requests -->
+      <section class="card" aria-labelledby="requests-title">
+        <h2 id="requests-title">Requests</h2>
+        <p class="muted">Ask to be paid. Share the link or the QR code.</p>
+        <form id="request-form" novalidate>
+          <label for="request-wallet">Wallet to receive</label>
+          <select id="request-wallet" name="wallet"></select>
+          <label for="request-amount">Amount</label>
+          <input id="request-amount" name="amount" type="text" inputmode="decimal" autocomplete="off">
+          <label for="request-note">Note (optional)</label>
+          <input id="request-note" name="note" type="text" maxlength="200" autocomplete="off">
+          <p class="field-error" id="request-form-error" hidden></p>
+          <button type="submit" id="request-submit">Create request</button>
+        </form>
+        <p id="request-status" class="status" role="status" aria-live="polite"></p>
+        <div id="request-share" hidden>
+          <img id="request-qr" alt="QR code for the payment request" width="256" height="256">
+          <p class="muted">Share this link. It is shown only once.</p>
+          <p class="wrap" id="request-link"></p>
+        </div>
+        <div class="section-body" id="requests-body" aria-live="polite"></div>
+        <p class="section-error field-error" id="requests-error" role="alert" hidden></p>
+      </section>
+
+      <!-- Subscriptions -->
+      <section class="card" aria-labelledby="subscriptions-title">
+        <h2 id="subscriptions-title">Subscriptions</h2>
+        <div class="section-body" id="subscriptions-body" aria-live="polite"></div>
+        <p class="section-error field-error" id="subscriptions-error" role="alert" hidden></p>
+      </section>
+
+      <!-- Pools -->
+      <section class="card" aria-labelledby="pools-title">
+        <h2 id="pools-title">Pools</h2>
+        <div class="section-body" id="pools-body" aria-live="polite"></div>
+        <p class="section-error field-error" id="pools-error" role="alert" hidden></p>
+      </section>
+
+      <!-- History -->
+      <section class="card" aria-labelledby="history-title">
+        <h2 id="history-title">History</h2>
+        <div class="section-body" id="history-body" aria-live="polite"></div>
+        <p class="section-error field-error" id="history-error" role="alert" hidden></p>
+      </section>
+    </div>
+
+    <p id="page-error" class="field-error" role="alert" hidden></p>
+  </main>
+
+  <footer class="site-footer">
+    <p class="muted">guacapay</p>
+  </footer>
+</body>
+</html>

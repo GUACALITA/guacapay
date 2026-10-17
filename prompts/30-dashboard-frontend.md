@@ -2,8 +2,26 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** code and tests written; **tests not run**, at the user's request. Verification is pending. The 360 px check in headless Edge has not been run.
+**Files produced:** `frontend/dashboard.html`, `frontend/js/pages/dashboard.js`, `backend/test/frontend-dashboard.test.js`; edited `frontend/js/messages.js` (status texts for requests, subscriptions, pools, deposits and withdrawals; role and interval labels), `frontend/css/main.css` (wrapping and image rules for 360 px), `backend/src/subscriptions/service.js` (the list says whether the user is the payee or the payer), `backend/test/security.test.js` and `backend/test/frontend-shell.test.js` (dashboard added to the inline-style checks)
+
+**Choices made in this step:**
+- Each section loads on its own, shows its own empty state with one action, and its own error. A rejected session ends the page and shows sign-in.
+- The history is built on the client from payments, withdrawals and deposits, newest first. There is no combined history endpoint.
+- "Waiting to be claimed" is the sum of the user's payments in `claimable` status, per currency. It is not a custody balance.
+- The request form creates a request from a linked wallet. The QR image is shown only if it is a PNG data URL, and the link is shown once, as the backend returns it.
+- Creating subscription offers and pools has no form yet; those sections say "coming soon" and list what exists.
+- No section shows an internal ID. Buttons use IDs only inside handlers.
+
+**Not built (not in this prompt's list):**
+- Deposit, withdrawal, split and join screens. The API exists; the dashboard does not link to them yet.
+- The payer's page for a request, a subscription offer and a pool join link. The links these forms create point to pages that do not exist yet. The request link is shown with a note rather than as a clickable link.
+
+**Not verified yet:**
+- All sections loading with an empty account (needs a browser).
+- No horizontal scroll at 360 px in headless Edge (reported separately; not run).
+
+## Prompt
 
 ## Prompt
 

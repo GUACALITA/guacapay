@@ -76,7 +76,7 @@ test('error responses never include a stack trace, even outside production check
 });
 
 test('pages use no inline style attributes, so the style policy can stay strict', () => {
-  const pages = ['index.html', 'new.html', 'payment.html', 'claim.html'];
+  const pages = ['index.html', 'new.html', 'payment.html', 'claim.html', 'dashboard.html'];
   for (const page of pages) {
     const html = readFileSync(join(frontendDir, page), 'utf8');
     assert.equal(/\sstyle="/.test(html), false, `${page} uses an inline style`);

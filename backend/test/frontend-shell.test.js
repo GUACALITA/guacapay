@@ -193,7 +193,7 @@ test('/api/config reports sandbox mode from RAPYD_SANDBOX', async () => {
 });
 
 test('every page has the viewport, styles, shell script and banner', () => {
-  const pages = ['index.html', 'new.html', 'payment.html', 'claim.html'];
+  const pages = ['index.html', 'new.html', 'payment.html', 'claim.html', 'dashboard.html'];
   for (const page of pages) {
     const html = readFileSync(join(frontendDir, page), 'utf8');
     assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1">/, page);
