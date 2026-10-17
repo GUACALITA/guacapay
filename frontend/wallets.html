@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wallets · guacapay</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script type="module" src="js/shell.js"></script>
+  <script type="module" src="js/pages/wallets.js"></script>
+</head>
+<body>
+  <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html">guacapay</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="wallet-setup.html">Set up a wallet</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <h1>Your test wallets</h1>
+
+    <section class="card" id="signed-out" hidden>
+      <p>Sign in to link a wallet.</p>
+      <p><a href="index.html">Go to sign in</a></p>
+    </section>
+
+    <section class="card" id="link-section" aria-labelledby="link-title" hidden>
+      <h2 id="link-title">Link a wallet address</h2>
+      <p class="muted">
+        Paste the wallet address from your test wallet. It starts with <code>https://</code>.
+        Then approve the link in your wallet: the wallet opens its own approval page. guacapay never sees your wallet's password or codes.
+      </p>
+      <form id="wallet-form" novalidate>
+        <label for="wallet-url">Wallet address</label>
+        <input id="wallet-url" name="wallet_url" type="url" inputmode="url" autocomplete="off" placeholder="https://" required>
+        <p class="field-error" id="wallet-url-error" hidden></p>
+        <button type="submit" id="add-wallet">Add wallet</button>
+      </form>
+      <p id="wallet-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card" id="list-section" aria-labelledby="list-title" hidden>
+      <h2 id="list-title">Your wallets</h2>
+      <p id="wallet-empty" class="muted" hidden>No wallets yet. Set one up first: <a href="wallet-setup.html">set up a test wallet</a>.</p>
+      <ul id="wallet-list"></ul>
+    </section>
+
+    <p id="page-error" class="field-error" role="alert" hidden></p>
+  </main>
+
+  <footer class="site-footer">
+    <p class="muted">guacapay</p>
+  </footer>
+</body>
+</html>

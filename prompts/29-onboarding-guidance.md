@@ -2,8 +2,22 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** code and tests written; **tests not run**, at the user's request. Verification is pending.
+**Files produced:** `frontend/wallet-setup.html`, `frontend/js/pages/wallet-setup.js`, `frontend/config/setup.json`, `frontend/wallets.html`, `frontend/js/pages/wallets.js`, `backend/test/frontend-setup.test.js`
+
+**Choices made in this step:**
+- The official links (sign-up page, key documentation) and the link limit are in `frontend/config/setup.json`. Changing them needs no code change. Only `https` links are used.
+- The steps follow `docs/OPEN_PAYMENTS.md` section 3 (sources checked 2026-10-16). Two things are not documented, and the page says so: how the key ID is formed, what the wallet shows after the key pair is generated. Registering a guacapay key in the user's wallet is not documented either, and guacapay does not do it.
+- The prompt's link form (prompt 19) had no screen. The index assigns the wallet screens to prompt 30. This step adds the minimal linking page `wallets.html` (add a wallet by address, approve the link), so the setup page can lead to it. Prompt 30 may replace it.
+- Approval asks for a link limit of 1000 cents (10.00 EUR of test money) from `setup.json`. Whether this is the right limit is not confirmed.
+- `wallet-setup.html` has no form fields. The test checks every field in `frontend/` for password, secret and key words.
+
+**Not verified yet:**
+- The wallet's own steps, as they look on the official site today. The page follows the written documentation only.
+- The approval round trip on the real test network (manual check). The approval finishes at `/api/grants/callback`, which redirects to `index.html`, not back to `wallets.html`.
+- The new pages are not linked from the sign-in page yet.
+
+## Prompt
 
 ## Prompt
 

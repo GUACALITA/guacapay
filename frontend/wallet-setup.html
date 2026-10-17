@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Set up a test wallet · guacapay</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script type="module" src="js/shell.js"></script>
+  <script type="module" src="js/pages/wallet-setup.js"></script>
+</head>
+<body>
+  <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html">guacapay</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="wallets.html">Wallets</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <h1>Set up a test wallet</h1>
+
+    <p class="muted">
+      guacapay does not create wallets or accounts for you. The email check and the identity steps are done by you, on the official site.
+      Nothing on this page asks for a password, a recovery phrase, a code from your wallet or a private key.
+    </p>
+
+    <section class="card" aria-labelledby="create-title">
+      <h2 id="create-title">Create the wallet</h2>
+      <ol>
+        <li>
+          <p><strong>Open the official sign-up page.</strong></p>
+          <p><a id="signup-link" target="_blank" rel="noopener noreferrer" hidden>Open the Interledger Test Wallet sign-up page</a></p>
+          <p class="muted" id="signup-unavailable" hidden>The sign-up link is not available. Try again later.</p>
+        </li>
+        <li>
+          <p><strong>Verify your email and complete the identity steps.</strong> Only you can do this, with your own email.</p>
+        </li>
+        <li>
+          <p><strong>Create a wallet account, deposit play money, and add a wallet address.</strong> Copy the wallet address. It starts with <code>https://</code>.</p>
+        </li>
+        <li>
+          <p><strong>Come back to guacapay and link the address.</strong></p>
+          <p><a href="wallets.html">Go to the wallet linking page</a></p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="card" aria-labelledby="key-title">
+      <h2 id="key-title">Register a key in your wallet</h2>
+      <p class="muted">These steps are from the Open Payments documentation. The official page is linked below.</p>
+      <ol>
+        <li>In the test wallet, open <strong>Settings</strong>, then <strong>Developer Keys</strong>.</li>
+        <li>Expand your wallet account, then generate a key pair.</li>
+        <li>
+          A <code>private.key</code> file downloads. Keep it on your own computer. Do not upload it, and do not paste its contents
+          anywhere. guacapay never asks for it.
+        </li>
+        <li>The key ID appears on the screen. Note it; it is not a secret.</li>
+      </ol>
+
+      <h3>Not covered by the documentation</h3>
+      <p>The documentation does not say the following, so this page does not describe them:</p>
+      <ul>
+        <li>how the key ID is formed;</li>
+        <li>what the wallet shows after the key pair is generated, beyond the key ID;</li>
+        <li>how a key from guacapay is registered in your wallet. guacapay does not register keys in your wallet.</li>
+      </ul>
+      <p>
+        Official reference: <a id="key-docs-link" target="_blank" rel="noopener noreferrer" hidden>Open Payments wallet keys</a>
+      </p>
+    </section>
+
+    <p class="muted"><a href="index.html">Back to sign in</a></p>
+  </main>
+
+  <footer class="site-footer">
+    <p class="muted">guacapay</p>
+  </footer>
+</body>
+</html>
