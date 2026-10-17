@@ -9,6 +9,7 @@ Automated tests use Node's built-in test runner (`node --test`). No test framewo
 | Backend tests (includes the frontend checks) | `cd backend && npm test` | Node 20, `npm install` |
 | Gateway tests | `cd gateway && npm test` | Node 20, `npm install` |
 | Sandbox check (manual) | `cd backend && npm run test:sandbox` | gateway running, real sandbox keys in `.env` |
+| Testnet end-to-end (manual) | `cd backend && npm run e2e:testnet` | two linked test wallets, approved consent, play money; see `docs/E2E_RUN.md` |
 
 Without Node installed on the host, run the tests in the same image the app uses:
 

@@ -2,8 +2,23 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** script written and syntax-checked; **the real run has not happened**. It needs an approved consent and play money, which only the owner can provide. `docs/E2E_RUN.md` stays "pending" until one successful run is pasted in.
+**Files produced:** `backend/scripts/testnet-e2e.js`, `docs/E2E_RUN.md`; edited `backend/package.json` (`e2e:testnet`, not part of `npm test`), `docs/TESTING.md` (manual row)
+
+**Choices made in this step:**
+- The script uses the app's own functions: `payFromWallet` for sender to custody, and `issueClaim`, `verifyClaimEmail` and `confirmClaim` for custody to recipient. It does not call the network directly.
+- The recipient's login code comes from the script's own mailer, so the email step is not proved. Stated in `docs/E2E_RUN.md`.
+- The script never creates a wallet or account, and never approves a consent. If the sender's consent is not approved, it starts one and prints the approval link, then exits with code 2.
+- The script lowers the payment minimum to 1 cent unless `PAYMENT_MIN_CENTS` is set, so 0.10 can be paid.
+- Exit codes: 0 completed, 1 failed at a step, 2 stopped before any money moved.
+- Printed output: step names, transfer and leg states, amounts, wallet URLs and the payment ID. No tokens, codes or keys.
+
+**Not verified yet:**
+- A successful run on the test network (manual; needs approved consent and play money).
+- A run without consent stopping at the approval step (needs the sender wallet linked in the app's database; the script was not run).
+- Only the syntax was checked, inside a Node container, without running the script.
+
+## Prompt
 
 ## Prompt
 
