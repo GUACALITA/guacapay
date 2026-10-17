@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="css/main.css">
   <script type="module" src="js/shell.js"></script>
   <script type="module" src="js/pages/payment.js"></script>
-  <script type="module" src="js/balance-panel.js"></script>
 </head>
 <body>
   <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
@@ -35,25 +34,13 @@
 
     <section class="card" id="pay-section" aria-labelledby="pay-title" hidden>
       <h2 id="pay-title">Pay from my wallet</h2>
-      <p class="muted" id="pay-empty" hidden>You have no linked wallet yet. Link a test wallet first.</p>
+      <p class="muted" id="pay-empty" hidden>You have no linked wallet yet. <a href="new.html">Add and link a test wallet</a> first.</p>
       <form id="pay-form" novalidate>
         <label for="pay-wallet">Wallet to pay from</label>
         <select id="pay-wallet" name="wallet"></select>
         <button type="submit" id="pay-wallet-submit">Pay from my wallet</button>
       </form>
       <p id="pay-status" class="status" role="status" aria-live="polite"></p>
-    </section>
-
-    <section class="card" id="balance-card" aria-labelledby="balance-title">
-      <h2 id="balance-title">Your app balance</h2>
-      <p id="balance-amount" class="status">Loading…</p>
-      <form id="recharge-form" novalidate>
-        <label for="recharge-amount">Amount to add (USD)</label>
-        <input id="recharge-amount" name="amount" type="text" inputmode="decimal" autocomplete="off">
-        <p class="field-error" id="recharge-error" hidden></p>
-        <button type="submit" id="recharge-submit">Recharge with Rapyd</button>
-      </form>
-      <p id="recharge-status" class="status" role="status" aria-live="polite"></p>
     </section>
 
     <p id="page-error" class="field-error" role="alert" hidden></p>

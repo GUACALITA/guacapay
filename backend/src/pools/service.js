@@ -1,6 +1,7 @@
 // Group pools: a collection (everyone pays a share toward one goal) or a tanda (a rotating circle).
 // Members pay into the custody wallet; payouts go from custody to one wallet. The payout amount is always the sum of the
 // contributions recorded for that pool and period, and a pool with a payout in progress accepts no contributions.
+import { assertWalletCurrency } from '../wallets/service.js';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { getDb } from '../db.js';
 import { config } from '../config.js';
@@ -120,11 +121,12 @@ export function createPool({ organizerId, body, db = getDb() }) {
   const input = parsePool(data);
 
   const wallet = typeof data.organizer_wallet_id === 'string'
-    ? db.prepare("SELECT id FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(data.organizer_wallet_id, organizerId)
+    ? db.prepare("SELECT id, asset_code FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(data.organizer_wallet_id, organizerId)
     : undefined;
   if (!wallet) {
     throw new AppError('wallet_not_linked', 409, 'Choose one of your linked wallets to receive the payout.');
   }
+  assertWalletCurrency(wallet, input.currency);
 
   const id = randomUUID();
   const token = newToken();
@@ -183,11 +185,12 @@ export async function joinPool({ token, memberId, walletId, db = getDb(), grantD
   }
 
   const wallet = typeof walletId === 'string'
-    ? db.prepare("SELECT id FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(walletId, memberId)
+    ? db.prepare("SELECT id, asset_code FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(walletId, memberId)
     : undefined;
   if (!wallet) {
     throw new AppError('wallet_not_linked', 409, 'Choose one of your linked wallets to pay from.');
   }
+  assertWalletCurrency(wallet, pool.currency);
 
   const consent = await requestConsent({
     userId: memberId,

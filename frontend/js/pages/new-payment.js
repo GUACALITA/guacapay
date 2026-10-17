@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { createPaymentOnly, fetchCurrencies } from '../flows.js';
 import { messageForError } from '../messages.js';
 import { newIdempotencyKey, validatePaymentForm } from '../payment-form.js';
+import { setupWalletLinking } from '../wallet-link.js';
 
 const $ = (id) => document.getElementById(id);
 const FIELDS = ['recipient-email', 'amount', 'currency', 'message'];
@@ -76,6 +77,13 @@ async function start() {
     $('signed-out').hidden = false;
     return;
   }
+
+  // Adding and linking a wallet happens here too, so the payer can link the wallet they pay from.
+  $('wallet-section').hidden = false;
+  const linking = setupWalletLinking({ client: api });
+  linking.refresh().catch((error) => {
+    $('wallet-status').textContent = messageForError(error);
+  });
 
   $('form-section').hidden = false;
   try {

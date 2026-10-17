@@ -14,8 +14,8 @@ services:
       # Fixed container values. They take precedence over .env so the mappings below stay valid.
       APP_PORT: "3202"
       DATABASE_PATH: /app/data/guacapay.db
-      # Inside the Docker network the gateway is reached by service name.
-      GATEWAY_URL: http://gateway:3203
+      # The platform's Open Payments key is read from the secrets folder mounted below, never from the host path in .env.
+      OPEN_PAYMENTS_PRIVATE_KEY_PATH: /app/keys/ilp-testnet-private.key
       # Development: email goes to the local mail catcher, never to a real inbox.
       SMTP_HOST: mailcatcher
       SMTP_PORT: "1025"
@@ -23,10 +23,9 @@ services:
       - "${APP_PORT:-3202}:3202"
     volumes:
       - app_data:/app/data
-      - ../keys:/app/keys:ro
+      # The folder that holds the platform's Open Payments key, read-only. Set OPEN_PAYMENTS_SECRETS_DIR in .env; it defaults to ../keys.
+      - ${OPEN_PAYMENTS_SECRETS_DIR:-../keys}:/app/keys:ro
     depends_on:
-      gateway:
-        condition: service_healthy
       mailcatcher:
         condition: service_started
     healthcheck:
@@ -37,28 +36,7 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  gateway:
-    build:
-      context: ..
-      dockerfile: docker/gateway.Dockerfile
-    env_file:
-      - path: ../.env
-        required: false
-    environment:
-      # Fixed container port. Takes precedence over .env so the host mapping below stays valid.
-      GATEWAY_PORT: "3203"
-      # Inside the Docker network the app is reached by service name.
-      APP_URL: http://app:3202
-    # Bound to localhost only. The gateway also requires GATEWAY_TOKEN on checkout routes.
-    ports:
-      - "127.0.0.1:${GATEWAY_PORT:-3203}:3203"
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3203/health"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
-    restart: unless-stopped
+  # The Rapyd gateway is not part of this stack (decision 017). Its code stays in gateway/ for development only.
 
   mailcatcher:
     image: axllent/mailpit:latest

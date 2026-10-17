@@ -11,7 +11,7 @@ Written for: engineers who will change the code. Read `DECISIONS.md` for the rea
 | Service | Where it runs | Port | Role |
 |---|---|---|---|
 | `app` | Docker container, Node 20, user `node` | 3202 (published on the host) | Sign-in, wallets, consent, payments, claims, transfers, custody, requests, subscriptions, pools, splits, deposits and withdrawals, the live-status WebSocket, email, the browser pages, and the background jobs. Owns the database. |
-| `gateway` | Docker container, Node 20, user `node` | 3203 (published on `127.0.0.1` only) | Talks to Rapyd. Used only when `PAYMENT_RAILS=rapyd`. |
+| `gateway` | Not in the compose stack since the testnet-only change. Its code stays in `gateway/` for development. | — | Talked to Rapyd. Would be needed only with `PAYMENT_RAILS=rapyd`. |
 | `mailcatcher` | Docker container (Mailpit) | SMTP 1025 (inside the network), web 8026 (host) | Receives every email in development. |
 | `app_data` | Docker named volume | — | Holds the SQLite database at `/app/data/guacapay.db`. |
 

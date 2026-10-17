@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="css/main.css">
   <script type="module" src="js/shell.js"></script>
   <script type="module" src="js/pages/new-payment.js"></script>
-  <script type="module" src="js/balance-panel.js"></script>
 </head>
 <body>
   <div class="banner" id="sandbox-banner" role="status" hidden>Sandbox mode. No real money moves.</div>
@@ -52,16 +51,21 @@
 
       <p id="form-status" class="status" role="status" aria-live="polite"></p>
     </section>
-    <section class="card" id="balance-card" aria-labelledby="balance-title" hidden>
-      <h2 id="balance-title">Your app balance</h2>
-      <p id="balance-amount" class="status">Loading…</p>
-      <form id="recharge-form" novalidate>
-        <label for="recharge-amount">Amount to add (USD)</label>
-        <input id="recharge-amount" name="amount" type="text" inputmode="decimal" autocomplete="off">
-        <p class="field-error" id="recharge-error" hidden></p>
-        <button type="submit" id="recharge-submit">Recharge with Rapyd</button>
+    <section class="card" id="wallet-section" aria-labelledby="wallet-title" hidden>
+      <h2 id="wallet-title">Your test wallet</h2>
+      <p class="muted">
+        Paste the wallet address from your test wallet. It starts with <code>https://</code>.
+        Then approve the link in your wallet. guacapay never sees your wallet's password or codes.
+      </p>
+      <form id="wallet-form" novalidate>
+        <label for="wallet-url">Wallet address</label>
+        <input id="wallet-url" name="wallet_url" type="url" inputmode="url" autocomplete="off" placeholder="https://" required>
+        <p class="field-error" id="wallet-url-error" hidden></p>
+        <button type="submit" id="add-wallet">Add wallet</button>
       </form>
-      <p id="recharge-status" class="status" role="status" aria-live="polite"></p>
+      <p id="wallet-status" class="status" role="status" aria-live="polite"></p>
+      <p id="wallet-empty" class="muted" hidden>No wallet yet. <a href="wallet-setup.html">Set up a test wallet</a> first.</p>
+      <ul id="wallet-list"></ul>
     </section>
   </main>
 

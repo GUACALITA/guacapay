@@ -21,21 +21,20 @@ Money on the test network stays there. The app never converts it to cash, and ne
 
 - **Docker Desktop.** Nothing else on your computer. Node is not needed to run the app.
 - **A test wallet, which you create yourself** on the official Interledger test wallet site. The app does not create wallets or accounts for you. Open `wallet-setup.html` in the app for the steps; it links to the official site.
-- **Settings in `.env`:** three generated secrets, the Open Payments values, the custody wallet, and `PAYMENT_CURRENCIES` set to your wallet's currency (EUR on the test network). The values are listed in `.env.example`; their names are the only thing in the repository.
+- **Settings in `.env`:** only the platform's Open Payments values (`OPEN_PAYMENTS_*`). The app generates its own secrets (sign-in, signing, and the encryption of permission tokens) on its first start and keeps them in its data folder. You do not create or paste them.
 - **Rapyd sandbox keys only if you use the card path** (`PAYMENT_RAILS=rapyd`, for development). The test-wallet product does not need them.
 
 ## Quick start
 
 Open **PowerShell** (Windows) or **Terminal** (macOS). Run everything from the project folder.
 
-### 1. Create your `.env` file and generate the three secrets
+### 1. Create your `.env` file, only for the platform's test-wallet values
 
 ```
 copy .env.example .env
-docker run --rm node:20-alpine node -p "require('crypto').randomBytes(32).toString('hex')"
 ```
 
-Run the second command three times, and paste each result into a different variable: `JWT_SECRET`, `HMAC_SECRET`, `GATEWAY_TOKEN`. Never reuse a value. Never share them. `.env` is ignored by git, so it is never uploaded.
+The app creates its own secrets on its first start, so you do not generate or paste any. `.env` is ignored by git, so it is never uploaded. Do not add secrets to it.
 
 ### 2. Fill in the test-wallet values
 
@@ -44,7 +43,7 @@ Open `.env` and set the Open Payments, custody and currency values from `.env.ex
 ### 3. Start everything
 
 ```
-docker compose -f docker/docker-compose.yml up --build
+docker compose --env-file .env -f docker/docker-compose.yml up --build
 ```
 
 Wait until the log shows `app listening`. Leave the window open. Press `Ctrl+C` to stop.
@@ -102,7 +101,7 @@ Rapyd must reach your computer to report card payments. That is needed only with
 | `[config] JWT_SECRET is required` (or another name) | That variable is empty in `.env`. Fill it in and start again. |
 | `[config] ... must be at least 32 characters` | The secret is too short. Generate a new one with the command in step 1. |
 | `Bind for 0.0.0.0:3202 failed: port is already allocated` | Another program uses the port. Change `APP_PORT` in `.env`, for example `APP_PORT=3302`. |
-| Sign-in says "We could not send the email" | The email inbox container is not running. Check `docker compose -f docker/docker-compose.yml ps`. |
+| Sign-in says "We could not send the email" | The email inbox container is not running. Check `docker compose --env-file .env -f docker/docker-compose.yml ps`. |
 | "Transfers are not available yet" | The custody wallet is not configured. Set `CUSTODY_WALLET_ID` and `CUSTODY_WALLET_ADDRESS`. |
 | "That wallet host is not accepted here" | The wallet is not on the test network. Use a wallet on a host listed in `OPEN_PAYMENTS_HOSTS`. |
 
@@ -110,9 +109,9 @@ Rapyd must reach your computer to report card payments. That is needed only with
 
 | Action | Command |
 |---|---|
-| Stop (keeps the database) | Press `Ctrl+C`, then `docker compose -f docker/docker-compose.yml down` |
-| Start again | `docker compose -f docker/docker-compose.yml up --build` |
-| Delete the database and start clean | `docker compose -f docker/docker-compose.yml down -v` |
+| Stop (keeps the database) | Press `Ctrl+C`, then `docker compose --env-file .env -f docker/docker-compose.yml down` |
+| Start again | `docker compose --env-file .env -f docker/docker-compose.yml up --build` |
+| Delete the database and start clean | `docker compose --env-file .env -f docker/docker-compose.yml down -v` |
 
 ## Documentation
 

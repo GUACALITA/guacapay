@@ -1,6 +1,7 @@
 // Test wallets linked to users. A wallet address belongs to one user at a time.
 import { randomUUID } from 'node:crypto';
 import { getDb } from '../db.js';
+import { config } from '../config.js';
 import { AppError } from '../errors.js';
 import { getWalletAddress as readPublicWallet } from '../providers/openpayments.js';
 
@@ -53,7 +54,14 @@ export async function addWallet(userId, rawUrl, { db = getDb(), readWallet = rea
 }
 
 export function listWallets(userId, { db = getDb() } = {}) {
-  return db.prepare('SELECT * FROM wallets WHERE user_id = ? ORDER BY created_at, rowid').all(userId);
+  // Custody wallets (all currencies) are never shown as the user's own wallets.
+  const custodyAddresses = new Set(
+    Object.values(config.custody.addressByCurrency).concat(config.custody.address).filter(Boolean),
+  );
+  return db
+    .prepare('SELECT * FROM wallets WHERE user_id = ? ORDER BY created_at, rowid')
+    .all(userId)
+    .filter((wallet) => !custodyAddresses.has(wallet.wallet_url));
 }
 
 // Only the owner can revoke. Anyone else gets the same 404 as for a missing wallet.
@@ -79,4 +87,11 @@ export function markWalletLinked(walletId, { db = getDb() } = {}) {
     walletId,
   );
   return db.prepare('SELECT * FROM wallets WHERE id = ?').get(walletId);
+}
+
+// A payment, request, offer or pool can only use a wallet that holds its currency. Checked before any transfer or record is created.
+export function assertWalletCurrency(wallet, currency) {
+  if (wallet.asset_code !== currency) {
+    throw new AppError('currency_mismatch', 422, `That wallet holds ${wallet.asset_code}, but this is in ${currency}. Choose a wallet in ${currency}.`);
+  }
 }

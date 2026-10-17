@@ -1,12 +1,47 @@
 // The only module that reads process.env (see docs/CONVENTIONS.md).
 // Fails fast at startup if required values are missing or invalid.
 import 'dotenv/config';
-import { readFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8'));
+
+// Secrets the operator does not have to supply. If a variable is not set, a random value is generated once and kept
+// in the data folder (next to the database, never in the repository). A value set in the environment always wins.
+const GENERATED_SECRETS = ['JWT_SECRET', 'HMAC_SECRET', 'GATEWAY_TOKEN', 'GRANT_ENCRYPTION_KEY'];
+
+function provideGeneratedSecrets() {
+  const dataDir = dirname(process.env.DATABASE_PATH || join(here, '..', 'data', 'guacapay.db'));
+  const file = join(dataDir, 'generated-secrets.json');
+  let stored = {};
+  if (existsSync(file)) {
+    try {
+      stored = JSON.parse(readFileSync(file, 'utf8'));
+    } catch {
+      stored = {};
+    }
+  }
+
+  let changed = false;
+  for (const name of GENERATED_SECRETS) {
+    if (process.env[name]) continue;
+    if (!stored[name]) {
+      stored[name] = randomBytes(32).toString('hex');
+      changed = true;
+    }
+    process.env[name] = stored[name];
+  }
+
+  if (changed) {
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(file, JSON.stringify(stored), { mode: 0o600 });
+  }
+}
+
+provideGeneratedSecrets();
 
 const REQUIRED_SECRETS = ['JWT_SECRET', 'HMAC_SECRET', 'GATEWAY_TOKEN'];
 const MIN_SECRET_LENGTH = 32;
@@ -77,10 +112,20 @@ const openPaymentsHosts = (process.env.OPEN_PAYMENTS_HOSTS || 'ilp.interledger-t
   .map((host) => host.trim().toLowerCase())
   .filter(Boolean);
 
-const currencies = (process.env.PAYMENT_CURRENCIES || 'USD')
+// The currencies the test wallets hold. A payment must use a currency that the chosen wallet holds.
+const currencies = (process.env.PAYMENT_CURRENCIES || 'USD,EUR,COP')
   .split(',')
   .map((code) => code.trim().toUpperCase())
   .filter(Boolean);
+
+// Per-currency custody addresses. Set CUSTODY_USD_ADDRESS, CUSTODY_EUR_ADDRESS, CUSTODY_COP_ADDRESS to add custody
+// wallets for specific currencies. The default address (CUSTODY_WALLET_ADDRESS / OPEN_PAYMENTS_WALLET_ADDRESS) is
+// registered for its actual currency at startup once its wallet document is fetched.
+const custodyAddressByCurrency = {};
+for (const c of currencies) {
+  const addr = process.env[`CUSTODY_${c}_ADDRESS`];
+  if (addr) custodyAddressByCurrency[c] = addr;
+}
 
 if (problems.length > 0) {
   for (const problem of problems) {
@@ -106,10 +151,14 @@ export const config = {
     privateKeyPath: process.env.OPEN_PAYMENTS_PRIVATE_KEY_PATH || '',
     receiverWalletAddress: process.env.OPEN_PAYMENTS_RECEIVER_WALLET_ADDRESS || '',
   },
-  // The platform's custody wallet: holds money for unclaimed payments. Its ID is the wallets row of the custody wallet.
+  // The platform's custody wallets: hold money for unclaimed payments.
+  // The default address is registered for its actual currency at startup.
+  // Per-currency overrides (CUSTODY_USD_ADDRESS etc.) let each currency use a dedicated wallet.
   custody: {
-    walletId: process.env.CUSTODY_WALLET_ID || '',
-    address: process.env.CUSTODY_WALLET_ADDRESS || '',
+    walletId: process.env.CUSTODY_WALLET_ID || 'platform-custody',
+    address: process.env.CUSTODY_WALLET_ADDRESS || process.env.OPEN_PAYMENTS_WALLET_ADDRESS || '',
+    // Populated at startup: maps currency code → custody wallet address. Do not read directly; use getCustodyForCurrency().
+    addressByCurrency: custodyAddressByCurrency,
   },
   // Key for encrypting consent tokens at rest. Required only when a grant is used.
   grantEncryptionKey: process.env.GRANT_ENCRYPTION_KEY || '',

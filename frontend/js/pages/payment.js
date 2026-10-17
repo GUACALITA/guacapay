@@ -29,9 +29,17 @@ function setPayBusy(busy) {
 }
 
 // Lists only the wallets that finished consent. Returns false when there is none to pay from.
-async function loadWallets() {
-  const wallets = (await fetchWallets(api)).filter((wallet) => wallet.status === 'linked');
-  $('pay-wallet').replaceChildren(...wallets.map((wallet) => new Option(wallet.wallet_url, wallet.id)));
+// Only wallets that hold the payment's currency can pay it. Others are not offered.
+async function loadWallets(currency) {
+  const linked = (await fetchWallets(api)).filter((wallet) => wallet.status === 'linked');
+  const wallets = linked.filter((wallet) => wallet.asset_code === currency);
+  $('pay-wallet').replaceChildren(...wallets.map((wallet) => new Option(`${wallet.wallet_url} (${wallet.asset_code})`, wallet.id)));
+  if (wallets.length === 0) {
+    const link = document.createElement('a');
+    link.href = 'new.html';
+    link.textContent = `Add a ${currency} wallet`;
+    $('pay-empty').replaceChildren(`No linked wallet holds ${currency}. `, link, ' first.');
+  }
   $('pay-empty').hidden = wallets.length > 0;
   $('pay-form').hidden = wallets.length === 0;
   return wallets.length > 0;
@@ -65,7 +73,6 @@ async function start() {
   }
   if (!api.isSignedIn()) {
     $('signed-out').hidden = false;
-    $('balance-card').hidden = true;
     return;
   }
 
@@ -74,11 +81,10 @@ async function start() {
     $('status-section').hidden = false;
     renderSummary(payment);
     renderStatus(payment.status);
-    if (payment.status === 'created' && (await loadWallets())) wirePayForm(paymentId);
+    if (payment.status === 'created' && (await loadWallets(payment.currency))) wirePayForm(paymentId);
   } catch (error) {
     if (error.code === 'unauthorized' || error.code === 'session_expired') {
       $('signed-out').hidden = false;
-      $('balance-card').hidden = true;
       return;
     }
     showPageError(messageForError(error));

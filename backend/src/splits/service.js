@@ -1,5 +1,6 @@
 // One payment split among several recipients (prompt 27). Each part is a child payment, paid from the payer's wallet
 // into custody (prompt 22) and claimed separately by its recipient. One child failing does not touch the others.
+import { assertWalletCurrency } from '../wallets/service.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { getDb } from '../db.js';
 import { config } from '../config.js';
@@ -145,11 +146,12 @@ export async function createSplit({ payerId, body, walletId, idempotencyKey, mai
   }
 
   const wallet = typeof walletId === 'string'
-    ? db.prepare("SELECT id FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(walletId, payerId)
+    ? db.prepare("SELECT id, asset_code FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(walletId, payerId)
     : undefined;
   if (!wallet) {
     throw new AppError('wallet_not_linked', 409, 'Choose one of your linked wallets to pay from.');
   }
+  assertWalletCurrency(wallet, input.currency);
   if (!config.custody.walletId || !config.custody.address) {
     throw new AppError('transfer_not_configured', 503, 'Transfers are not available yet.');
   }

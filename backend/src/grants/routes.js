@@ -40,7 +40,8 @@ export function createGrantsRouter({ deps } = {}) {
         interactRef: req.query.interact_ref,
         deps,
       });
-      res.redirect(`${config.baseUrl}/index.html?grant=${encodeURIComponent(result.id)}&status=granted`);
+      // Back to the page that links wallets, so the approved wallet shows as linked.
+      res.redirect(`${config.baseUrl}/new.html?grant=${encodeURIComponent(result.id)}&status=granted`);
     }),
   );
 

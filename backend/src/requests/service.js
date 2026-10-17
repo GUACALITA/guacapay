@@ -1,5 +1,6 @@
 // Payment requests: a user asks to be paid. The payer's money goes straight to the requester's wallet (no custody, no claim).
 // A request is paid only when its transfer completes, and it can be paid once.
+import { assertWalletCurrency } from '../wallets/service.js';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { getDb } from '../db.js';
 import { config } from '../config.js';
@@ -85,11 +86,12 @@ export function createRequest({ ownerId, body, db = getDb() }) {
   const input = parseNewRequest(data);
 
   const wallet = typeof data.wallet_id === 'string'
-    ? db.prepare("SELECT id FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(data.wallet_id, ownerId)
+    ? db.prepare("SELECT id, asset_code FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(data.wallet_id, ownerId)
     : undefined;
   if (!wallet) {
     throw new AppError('wallet_not_linked', 409, 'Choose one of your linked wallets to receive the money.');
   }
+  assertWalletCurrency(wallet, input.currency);
 
   const id = randomUUID();
   const token = newToken();
@@ -204,11 +206,12 @@ export async function payRequest({ token, payerId, walletId, db = getDb(), deps 
   assertPayable(row, payerId);
 
   const payer = typeof walletId === 'string'
-    ? db.prepare("SELECT id FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(walletId, payerId)
+    ? db.prepare("SELECT id, asset_code FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(walletId, payerId)
     : undefined;
   if (!payer) {
     throw new AppError('wallet_not_linked', 409, 'Choose one of your linked wallets to pay from.');
   }
+  assertWalletCurrency(payer, row.currency);
 
   const requester = db.prepare("SELECT * FROM wallets WHERE id = ? AND status = 'linked'").get(row.wallet_id);
   if (!requester) {

@@ -1,6 +1,7 @@
 // Money movements for payments, built from transfers (engine.js).
 // Pay-in: the sender's wallet to the custody wallet. Payout: the custody wallet to the recipient's wallet.
 // A payment moves on only when its transfer reports completed. Retryable outcomes leave the payment where it is.
+import { assertWalletCurrency } from '../wallets/service.js';
 import { config } from '../config.js';
 import { getDb } from '../db.js';
 import { AppError } from '../errors.js';
@@ -16,9 +17,16 @@ const RESUME_BATCH_SIZE = 50;
 const running = new Set();
 
 function assertCustodyConfigured() {
-  if (!config.custody.walletId || !config.custody.address) {
+  if (!config.custody.address) {
     throw new AppError('transfer_not_configured', 503, 'Transfers are not available yet.');
   }
+}
+
+// Returns the custody wallet row for a given currency, or null if none is configured.
+function getCustodyForCurrency(currency, db) {
+  const address = config.custody.addressByCurrency[currency];
+  if (!address) return null;
+  return db.prepare("SELECT id, wallet_url, asset_code FROM wallets WHERE wallet_url = ? AND status != 'revoked'").get(address) || null;
 }
 
 function findTransfer(db, paymentId, direction) {
@@ -99,10 +107,25 @@ export async function payFromWallet({ paymentId, userId, walletId, db = getDb(),
     assertCustodyConfigured();
     const wallet =
       typeof walletId === 'string'
-        ? db.prepare("SELECT id FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(walletId, userId)
+        ? db.prepare("SELECT id, asset_code FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(walletId, userId)
         : undefined;
     if (!wallet) {
       throw new AppError('wallet_not_linked', 409, 'Choose one of your linked wallets to pay from.');
+    }
+    // Refuse paying from any custody wallet.
+    const allCustodyAddresses = new Set(Object.values(config.custody.addressByCurrency).concat(config.custody.address));
+    if (allCustodyAddresses.has(wallet.wallet_url)) {
+      throw new AppError('custody_wallet_not_payer', 422, "Pay from your own wallet. The platform's custody wallet cannot be the payer.");
+    }
+    assertWalletCurrency(wallet, payment.currency);
+    // The money goes into the custody wallet for this currency. Refused here before the network sees it.
+    const custodyWallet = getCustodyForCurrency(payment.currency, db);
+    if (!custodyWallet) {
+      throw new AppError(
+        'currency_not_held',
+        422,
+        `Payments in ${payment.currency} are not available yet. The platform has no custody wallet for ${payment.currency}.`,
+      );
     }
 
     // The status change and the transfer row are written together: a payment never waits without its transfer.
@@ -111,7 +134,7 @@ export async function payFromWallet({ paymentId, userId, walletId, db = getDb(),
       return createTransfer({
         paymentId,
         fromWalletId: wallet.id,
-        toWalletUrl: config.custody.address,
+        toWalletUrl: custodyWallet.wallet_url,
         amountCents: payment.amount_cents,
         currency: payment.currency,
         direction: DIRECTION.IN,
@@ -131,12 +154,16 @@ export async function payFromWallet({ paymentId, userId, walletId, db = getDb(),
 // attempt may still succeed, and then the claim stays in progress until resumePayouts settles it.
 export async function payoutToRecipient({ paymentId, destination, amountCents, currency, db = getDb(), deps } = {}) {
   assertCustodyConfigured();
+  const custodyWallet = getCustodyForCurrency(currency, db);
+  if (!custodyWallet) {
+    throw new AppError('currency_not_held', 422, `Payouts in ${currency} are not available: the platform has no custody wallet for ${currency}.`);
+  }
 
   let transfer = findTransfer(db, paymentId, DIRECTION.OUT);
   if (!transfer) {
     transfer = createTransfer({
       paymentId,
-      fromWalletId: config.custody.walletId,
+      fromWalletId: custodyWallet.id,
       toWalletUrl: destination,
       amountCents,
       currency,

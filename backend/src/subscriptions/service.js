@@ -1,6 +1,7 @@
 // Subscriptions: a payee offers a recurring charge. The payer approves it once, with a limit equal to one period's amount.
 // Each period the app makes one transfer, from the payer's wallet, under that subscription's permission.
 // The amount and interval are fixed in the offer. Changing either means a new offer and a new approval.
+import { assertWalletCurrency } from '../wallets/service.js';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { getDb } from '../db.js';
 import { config } from '../config.js';
@@ -92,11 +93,12 @@ export function createOffer({ payeeId, body, db = getDb() }) {
   const input = parseOffer(data);
 
   const wallet = typeof data.payee_wallet_id === 'string'
-    ? db.prepare("SELECT id FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(data.payee_wallet_id, payeeId)
+    ? db.prepare("SELECT id, asset_code FROM wallets WHERE id = ? AND user_id = ? AND status = 'linked'").get(data.payee_wallet_id, payeeId)
     : undefined;
   if (!wallet) {
     throw new AppError('wallet_not_linked', 409, 'Choose one of your linked wallets to receive the payments.');
   }
+  assertWalletCurrency(wallet, input.currency);
 
   const id = randomUUID();
   const token = newToken();
@@ -150,6 +152,7 @@ export async function acceptOffer({ token, payerId, walletId, db = getDb(), gran
   if (!payer) {
     throw new AppError('wallet_not_linked', 409, 'Choose one of your linked wallets to pay from.');
   }
+  assertWalletCurrency(payer, row.currency);
 
   const payee = db.prepare("SELECT id FROM wallets WHERE id = ? AND status = 'linked'").get(row.payee_wallet_id);
   if (!payee) {

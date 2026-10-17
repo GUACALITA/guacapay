@@ -9,6 +9,7 @@ import { startPaymentPoller } from './payments/poller.js';
 import { attachLiveStatus } from './ws/live-status.js';
 import { mailerFromConfig } from './email/index.js';
 import { checkCustodyWallet } from './custody/service.js';
+import { ensurePlatformCustody } from './custody/setup.js';
 import { startSubscriptionJob } from './subscriptions/job.js';
 import { startPoolJob } from './pools/job.js';
 
@@ -19,6 +20,9 @@ try {
   logger.error('migrations failed', { error: err.message });
   process.exit(1);
 }
+
+// Prepares the platform's custody wallet (no .env setting needed). A failure is logged and does not stop the server.
+ensurePlatformCustody().catch((err) => logger.error('custody setup failed', { error: err.message }));
 
 // Checks the custody wallet without stopping the server: it is needed for transfers, not for the rest of the app.
 checkCustodyWallet().then((report) => {
