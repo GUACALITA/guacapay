@@ -44,6 +44,7 @@ export function getTransfer(id, { db = getDb() } = {}) {
 export function createTransfer({
   paymentId,
   requestId = null,
+  grantId = null,
   fromWalletId,
   toWalletUrl,
   amountCents,
@@ -57,12 +58,13 @@ export function createTransfer({
   const id = randomUUID();
   const now = iso();
   db.prepare(
-    `INSERT INTO transfers (id, payment_id, request_id, from_wallet_id, to_wallet_url, amount_cents, currency, status, direction, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO transfers (id, payment_id, request_id, grant_id, from_wallet_id, to_wallet_url, amount_cents, currency, status, direction, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     paymentId ?? null,
     requestId,
+    grantId,
     fromWalletId,
     toWalletUrl,
     amountCents,
@@ -103,9 +105,10 @@ async function execute(transfer, deps, db) {
     throw new AppError('sender_wallet_not_linked', 409, 'The sending wallet is not linked.');
   }
 
-  const grant = db
-    .prepare("SELECT id FROM grants WHERE wallet_id = ? AND status = 'granted' ORDER BY granted_at DESC LIMIT 1")
-    .get(sender.id);
+  // A transfer made for a subscription must use that subscription's permission; otherwise the latest one is used.
+  const grant = transfer.grant_id
+    ? db.prepare("SELECT id FROM grants WHERE id = ? AND wallet_id = ? AND status = 'granted'").get(transfer.grant_id, sender.id)
+    : db.prepare("SELECT id FROM grants WHERE wallet_id = ? AND status = 'granted' ORDER BY granted_at DESC LIMIT 1").get(sender.id);
   if (!grant) {
     throw new AppError('no_active_grant', 409, 'The sending wallet has no active permission.');
   }

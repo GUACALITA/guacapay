@@ -76,3 +76,15 @@ Naming: the values came under the names `ILP_TESTNET_*`. We use `OPEN_PAYMENTS_*
 ## 8. Open design question
 
 Who holds the money between a card payment (Rapyd) and the transfer to the recipient's testnet wallet? The reference analysis left this undecided (see `REFERENCE_ANALYSIS.md`, section 6). The sender wallet above is the platform's funding wallet, so this decision decides which wallet pays out.
+
+## Recurring grants: interval format (not verified)
+
+**Status:** not verified against the Open Payments specification. Checked on 2026-10-17:
+
+- A web search for the grant `limits.interval` format returned no Open Payments page.
+- `https://openpayments.dev/identity/grants/` has no `limits`, `debitAmount` or `interval` section.
+- The specification source file on GitHub (`interledger/open-payments`, `openapi/auth-server.yaml`) returned 404 at the path tried.
+
+**What the code assumes:** an ISO 8601 repeating interval, `R/<start>/<duration>`, where the duration is one of `P1D`, `P1W`, `P1M`. The start is the time the consent was given. `backend/src/grants/service.js` validates the pattern `^R\/[^/]+\/P[^/]+$`.
+
+**To settle before live use:** read the `interval` description and example in the current Open Payments auth-server spec, then replace this section with the exact source and date.
