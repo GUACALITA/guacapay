@@ -42,6 +42,8 @@ Each entry records a choice, its reason, and what it rules out. Numbers are stab
 
 ## 007 — Rapyd is reached only through the gateway
 
+*Status: still true for the card rail (`PAYMENT_RAILS=rapyd`). Rapyd is not on the money path since decision 017.*
+
 - **Decision:** the app never calls Rapyd. It calls the gateway over HTTP, and only the gateway's `providers/rapyd.js` knows Rapyd URLs, field names, and signing.
 - **Signing:** as documented, `base64(hex(HMAC-SHA256(secret, method + path + salt + timestamp + access_key + secret + body)))`. Salt is 16 hex characters. The body is empty for GET and compact JSON for POST. Confirmed by Rapyd's sandbox accepting a checkout request.
 - **Retries:** only network errors and timeouts are retried (twice). Each attempt gets a new salt and timestamp, and POST keeps the same `idempotency` header (the payment ID), so a retry cannot create a second checkout.
@@ -50,6 +52,8 @@ Each entry records a choice, its reason, and what it rules out. Numbers are stab
 - **Sandbox:** `RAPYD_SANDBOX=true` (default) uses `sandboxapi.rapyd.net`. Rapyd does not accept localhost return URLs, so real checkout tests need a public URL.
 
 ## 008 — Webhooks confirm payments with a status request, never by trusting the event
+
+*Status: applies to the card rail only (`PAYMENT_RAILS=rapyd`). Not on the money path since decision 017.*
 
 - **Flow:** Rapyd calls the gateway. The gateway verifies the signature on the raw body, acknowledges with 200, and forwards a small event (`eventId`, `type`, `paymentReference`, `providerPaymentId`) to the app. The app then asks the gateway for the checkout status and applies only what Rapyd's status request confirms.
 - **Why:** the webhook body is signed, but the app still checks the status with Rapyd, so a wrong or replayed event cannot move money state on its own.
@@ -107,6 +111,8 @@ Each entry records a choice, its reason, and what it rules out. Numbers are stab
 
 ## 015 — Scope: Rapyd for collection, Open Payments on testnet for transfers
 
+*Status: superseded by decision 017 for the money path. Kept as history.*
+
 - **Decision:** card money is collected through Rapyd. The transfer to the recipient uses Open Payments on the Interledger test network. Guacapay runs no node of its own.
 - **Ruled out for now:** Rafiki (we would have to run an ILP node), a Guacalita node, and any Chimoney integration.
 - **Reason:** the team has not chosen to operate a payment network yet. Testnet keeps the transfer leg real without taking on that operation.
@@ -127,3 +133,92 @@ Each entry records a choice, its reason, and what it rules out. Numbers are stab
 - **Ruled out:** an own Interledger node (Rafiki), a Guacalita node, Chimoney, and any cash-out. Money on the test network cannot leave it, because the test network uses play money.
 - **Reason:** the hackathon asks for one payment that works end to end over Open Payments. A bridge from card money to the test network would need a node, and the team chose not to run one.
 - **Consequence:** balances stay inside the test network. A user can pay other test wallets, not withdraw cash.
+- **Later:** decision 020 allows a withdrawal to the user's own linked test wallet, backed by custody. It is still not cash.
+
+## 018 — Custody wallet holds unclaimed money, and the ledger tracks each owner
+
+- **Decision:** money for an unclaimed payment sits in one platform test wallet, the custody wallet (`CUSTODY_WALLET_ID`, `CUSTODY_WALLET_ADDRESS`). Every amount that enters or leaves it is a row in `custody_entries`, owned by exactly one payment, pool or user. A database trigger refuses any exit larger than the entries held for that owner.
+- **Reason:** the recipient claims later, so the money needs a holder. A ledger per owner shows whose money it is, and the database refuses a payout the ledger cannot cover.
+- **Ruled out:** paying straight from sender to recipient before the claim; a single shared pot with no owner; app-balance money leaving custody without backing.
+- **Status:** written and tested offline (`custody.test.js`), not yet run on the real network.
+
+## 019 — Pay by email is two transfers: into custody, then out to the recipient
+
+- **Decision:** a payment is paid from the sender's wallet into custody (transfer 1, direction `in`). The payment becomes `paid` only when transfer 1 completes. The claim, then the payout to the recipient's wallet (transfer 2, direction `out`), follow the claim rules of decision 012.
+- **Reason:** the recipient may claim much later, and the money must be held until then. Both transfers use the same engine, so each one records its legs.
+- **Ruled out:** a single transfer to a recipient who has not claimed yet; marking a payment `paid` before the network reports completion.
+
+## 020 — Withdrawals only up to balance backed in custody; deposits create the backing
+
+- **Decision:** a user withdraws to their own linked wallet only up to the lower of their app balance and the amount custody holds for them, minus withdrawals in progress. A deposit (wallet to custody) credits the balance and records the custody entry. The balance is debited only when the withdrawal's transfer completes.
+- **Reason:** the app balance came from Rapyd recharges, which never reach custody. Withdrawing that balance would pay out money the platform does not hold for that user. The owner chose this rule on 2026-10-17.
+- **Ruled out:** withdrawing unbacked balance; debiting the balance before the transfer completes.
+- **Consequence:** a Rapyd recharge balance cannot be withdrawn. Only deposits made on the test network can.
+
+## 021 — The server calls only the Open Payments hosts it is configured for
+
+- **Decision:** every Open Payments call checks its host against `OPEN_PAYMENTS_HOSTS` (default: the wallet host and the authorization host of the test network) before any request is sent. Wallet addresses and the servers named by wallet documents are checked the same way.
+- **Reason:** a user could otherwise make the server contact any HTTPS host they named, and error answers would show whether it responded (finding F9 in `SECURITY_REVIEW.md`).
+- **Ruled out:** arbitrary wallet hosts; trusting a server name taken from a wallet document without a check.
+- **Status:** fixed, with a regression test (`security-review.test.js`), not yet run.
+
+## 022 — Secret tokens never travel in a URL path
+
+- **Decision:** the public request link token and the subscription and pool link tokens travel in a query string or a request body. The request logger writes the path, so a token in the path would be written to the log.
+- **Ruled out:** `/api/requests/public/:token` style routes.
+- **Consequence:** the public routes are `GET .../public?token=` and `POST .../public/pay` (with the token in the body).
+
+## 023 — A payment request is paid straight to the requester's wallet
+
+- **Decision:** a request is paid by one transfer from the payer's wallet to the requester's wallet. No custody and no claim step. The request becomes `paid` only when that transfer completes, and it can be paid once. The transfer is recorded with `request_id`, not as a `payments` row.
+- **Reason:** the payment states have no route to `completed` without a claim. A separate row would have needed a second, parallel state machine.
+- **Ruled out:** a fake `payments` row that skips states; paying the same request twice.
+
+## 024 — A subscription's amount and interval are fixed in the offer
+
+- **Decision:** the payee creates an offer with a fixed amount and interval. The payer approves it once, with a limit equal to one period. Each period is one charge, unique per `(subscription, period)`. Three failed charges in a row pause the subscription; a success resets the count.
+- **Reason:** the payer's approval covers exactly what they saw. A repeated job run cannot charge the same period twice.
+- **Ruled out:** a payee changing the amount without a new approval; more than one charge per period.
+
+## 025 — Subscription intervals are daily, weekly or monthly, and the format is not yet verified
+
+- **Decision:** the app supports `P1D`, `P1W` and `P1M` only. The permission's interval is sent as `R/<start>/<duration>`, following ISO 8601.
+- **Reason:** three periods cover the product's use cases; a fixed list keeps the calendar arithmetic small.
+- **Not verified:** the exact interval format the Open Payments authorization server expects. See `OPEN_PAYMENTS.md`.
+
+## 026 — Group pools pay out only the contributions recorded for that period
+
+- **Decision:** a collection pays the organizer once its total reaches the goal, or the total collected when its closing date passes. A tanda pays a period's pool to the member in that position only after every member has paid for that period. The payout amount is recomputed from completed contributions each time it starts. While a payout is in progress the pool is `closing`, and it accepts no contributions.
+- **Reason:** the payout always equals what was recorded, and no contribution can change the amount mid-payout.
+- **Ruled out:** partial tanda payouts; paying members who have not paid.
+
+## 027 — A split is one payment with several child payments, each claimed separately
+
+- **Decision:** a split checks every part before anything is created: between 2 and 20 recipients, no repeated recipient, each amount valid, and the parts add up exactly to the total. The children are created in one transaction, then paid one by one. A child that cannot be paid is marked failed, and the others go on. An optional `Idempotency-Key` returns the first split for a repeated request.
+- **Reason:** one failed recipient should not stop the rest, and a retried request should not pay twice.
+- **Ruled out:** creating children for parts that do not add up; a retried request paying again.
+
+## 028 — The app never creates wallets or accounts for anyone
+
+- **Decision:** the onboarding pages send the user to the official test-wallet site. The user verifies their own email and identity there. The pages keep their links in `frontend/config/setup.json`. No page asks for a password, a wallet code or a private key, and a test checks the frontend files for such fields.
+- **Reason:** account creation and identity checks belong to the person, not to the app.
+- **Ruled out:** automating sign-up or wallet login; storing wallet credentials.
+
+## 029 — The dashboard builds its history on the client, with no HTML from strings
+
+- **Decision:** the dashboard calls one endpoint per feature and merges the history in the browser. Every text from the server is set with `textContent`.
+- **Reason:** no combined history endpoint exists yet, and merging on the client keeps the server small. Text-only rendering keeps server text from injecting markup.
+- **Ruled out:** an `innerHTML` render; a server-side combined history before it is needed.
+
+## 030 — The testnet end-to-end script is manual and uses the app's own functions
+
+- **Decision:** `backend/scripts/testnet-e2e.js` runs only when a person starts it (`npm run e2e:testnet`), never in `npm test`. It uses the same functions the app uses, so the proof exercises the real code path. It never creates a wallet, never approves a consent, and never prints a key, token or login code. Exit code 2 means it stopped before any money moved.
+- **Reason:** the proof needs real wallets, approved consent and play money, which only the owner can provide.
+- **Ruled out:** a proof in the automated suite; a script that creates accounts.
+- **Caveat:** the login code comes from the script's own mailer, so email delivery is not part of the proof.
+
+## 031 — Operator endpoints use the gateway token, never a user session
+
+- **Decision:** `/api/custody` (the custody ledger and its balances) requires the gateway token. A user's sign-in is refused. No user route returns custody balances or the custody wallet address.
+- **Reason:** the custody balance is the platform's, not any user's.
+- **Ruled out:** exposing custody balances to users.

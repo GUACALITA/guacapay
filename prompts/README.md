@@ -57,3 +57,5 @@ Priority order. Items marked **demo** are needed for the hackathon's goal: one p
 | 31 | `31-testnet-e2e.md` | End-to-end test with two real test wallets (manual) | **demo** |
 | 32 | `32-security-review-2.md` | Security review of the new flows | before demo |
 | 33 | `33-docs-update.md` | README, architecture and decisions for the new scope | before demo |
+
+**Status of 17 to 33 (2026-10-17):** every prompt's code is written and recorded in `AI_USAGE.md`. The automated tests for prompts 18 to 32 are written and **have not been run**, at the owner's request. No transfer has been made on the real test network: the first real run is prompt 31's script (see `docs/E2E_RUN.md`), and it needs an approved consent and play money from the owner.

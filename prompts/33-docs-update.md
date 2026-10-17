@@ -2,8 +2,25 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** documentation written. The "Done when" check on claims is **not met as written**: every claim names a check, but the checks are written and not run, and no real-network transfer has happened. Those claims are marked "not verified". Tests not run, at the owner's request.
+**Files produced:** `README.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` (018 to 031), `docs/OPEN_PAYMENTS.md`, `docs/TESTING.md`, `prompts/README.md` (status note), `AI_USAGE.md`, `prompts/33-docs-update.md`
+
+**Choices made in this step:**
+- Every claim in the README names its test, marked "written, not run". No claim is presented as passing.
+- `OPEN_PAYMENTS.md` lists facts with dates and sources only when the repository records them. Facts reported during development without a recorded date are "not yet verified" (N6 to N8) until re-checked.
+- Decisions 018 to 031 each have a reason and what they rule out. Decisions 007, 008 and 015 get a status note; 016 was already superseded; 017 gets a note about the later withdrawal rule.
+- Stale claims corrected: the testing doc said the dashboard's 360 px layout was checked by hand (it was not); the AI usage summary said every check passed (it did not).
+
+**Rapyd search (criterion):** every mention of Rapyd in `README.md`, `docs/`, `prompts/README.md` and `AI_USAGE.md` is either the card path (development, `PAYMENT_RAILS=rapyd`), a note that it is off the money path, or a superseded decision. `docs/SECURITY_REVIEW.md` is excluded from the search because it is a findings record.
+
+**Claims not yet verified:**
+- Every money flow on the real test network (pay by email, requests, subscriptions, pools, splits, deposits and withdrawals).
+- The interval format for subscriptions and tandas (N3).
+- The outgoing payment's state values and the receiver's permission behavior (N4, N5).
+- The 360 px layout of the dashboard and the onboarding pages.
+- The test wallets' currency against the app's default (N14).
+
+## Prompt
 
 ## Prompt
 

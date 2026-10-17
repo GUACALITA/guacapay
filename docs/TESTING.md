@@ -39,6 +39,18 @@ To prove the tests need no network, add `--network none`. The backend suite and 
 | Live status over WebSocket: access, tokens, timeouts | `backend/test/live-status.test.js` |
 | Browser reconnect and stop rules | `backend/test/frontend-live-status.test.js` |
 | API client, sandbox banner, pages, no `localStorage`, no HTML from strings | `backend/test/frontend-shell.test.js`, `backend/test/frontend-flow.test.js` |
+| Wallet linking, consent, grant expiry and revocation | `backend/test/wallets.test.js`, `backend/test/grants.test.js` (written, not run) |
+| Transfer legs, retries, asset mismatch | `backend/test/transfers.test.js` (written, not run) |
+| Pay by email: custody, claim, payout, failed second transfer | `backend/test/payment-flow.test.js` (written, not run) |
+| Custody ledger: owners, out never above in, operator-only endpoint | `backend/test/custody.test.js` (written, not run) |
+| Payment requests: create, pay once, expiry, QR decodes to the link | `backend/test/requests.test.js` (written, not run) |
+| Subscriptions: one charge per period, pause after three failures, cancel | `backend/test/subscriptions.test.js` (written, not run) |
+| Pools: collection pays the total, tanda waits for everyone, no double contribution | `backend/test/pools.test.js` (written, not run) |
+| Splits: parts add up, one failed part, idempotency | `backend/test/splits.test.js` (written, not run) |
+| Deposits and withdrawals: debit once, backed balance only, refusals | `backend/test/withdrawals.test.js` (written, not run) |
+| Onboarding pages: no password, code or key fields | `backend/test/frontend-setup.test.js` (written, not run) |
+| Dashboard: sections, no inline script or style, no HTML from strings | `backend/test/frontend-dashboard.test.js` (written, not run) |
+| Server contacts only the test network's hosts (finding F9) | `backend/test/security-review.test.js` (written, not run) |
 | Full flow in one run | `backend/test/integration.test.js` |
 | Lost webhook recovered by the poller | `backend/test/integration.test.js` |
 
@@ -62,6 +74,8 @@ It creates one sandbox checkout, which nobody pays. It is not part of `npm test`
 
 - **Real Rapyd webhooks:** the signature encoding (base64 of the HMAC, or base64 of its hex) is accepted both ways until one real sandbox webhook confirms which one Rapyd sends.
 - **Real transfers:** the Open Payments transfer is not written yet (prompt 08 is blocked).
-- **Browser layout:** checked by hand in headless Edge at 360 px (no horizontal overflow). It is not an automated test.
+- **Browser layout:** the 360 px check (no horizontal overflow) in headless Edge has **not** been done for the dashboard or the onboarding pages. It is a manual step, and it is not an automated test.
+- **The testnet end-to-end run:** written as a manual script (`npm run e2e:testnet`), not run yet. See `E2E_RUN.md`.
+- **Suites for prompts 19 to 32:** written, **not run**, at the owner's request. Until a run passes, a claim that depends on them is not verified.
 - **Ping timeout:** the 10-second drop for a client that stops answering pings is in the code, but no test waits for it.
 - **More than one app instance:** live updates and the poller assume a single process.
