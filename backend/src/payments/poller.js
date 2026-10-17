@@ -5,6 +5,7 @@ import { issuePendingClaims, resumePayouts } from '../claims/service.js';
 import { resumePayIns } from '../transfers/payments.js';
 import { resumeRequests } from '../requests/service.js';
 import { refreshPendingSplits } from '../splits/service.js';
+import { resumeMovements } from '../balance/movements.js';
 
 export function startPaymentPoller({ gateway, mailer, intervalMs = 60 * 1000 }) {
   let running = false;
@@ -30,6 +31,10 @@ export function startPaymentPoller({ gateway, mailer, intervalMs = 60 * 1000 }) 
       }
       const claims = await issuePendingClaims({ mailer });
       refreshPendingSplits();
+      const movements = await resumeMovements();
+      if (movements.settled > 0) {
+        logger.info('poll settled deposits and withdrawals', movements);
+      }
       if (claims.issued > 0) {
         logger.info('poll issued claim links', claims);
       }

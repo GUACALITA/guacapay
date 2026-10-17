@@ -8,13 +8,13 @@ import { getWalletAddress } from '../providers/openpayments.js';
 
 const DIRECTION = Object.freeze({ IN: 'in', OUT: 'out' });
 
-// An entry belongs to a payment or to a pool, never both.
-function write(db, { paymentId = null, poolId = null, transferId, amountCents, currency, direction }) {
+// An entry belongs to exactly one owner: a payment, a pool, or a user (their backed balance).
+function write(db, { paymentId = null, poolId = null, userId = null, transferId, amountCents, currency, direction }) {
   try {
     db.prepare(
-      `INSERT INTO custody_entries (id, payment_id, pool_id, amount_cents, currency, direction, transfer_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    ).run(randomUUID(), paymentId, poolId, amountCents, currency, direction, transferId ?? null);
+      `INSERT INTO custody_entries (id, payment_id, pool_id, user_id, amount_cents, currency, direction, transfer_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(randomUUID(), paymentId, poolId, userId, amountCents, currency, direction, transferId ?? null);
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_TRIGGER' && err.message.includes('custody_out_exceeds_in')) {
       throw new AppError('custody_out_exceeds_in', 409, 'The custody wallet does not hold enough for this payment.');
@@ -33,6 +33,24 @@ export function recordIn(db, entry) {
 
 // Money left custody: the payout to the recipient completed.
 export function recordOut(db, entry) {
+  write(db, { ...entry, direction: DIRECTION.OUT });
+}
+
+// The amount custody holds for one user in one currency (deposits in, withdrawals out).
+export function userBacking(userId, currency, { db = getDb() } = {}) {
+  return db
+    .prepare(
+      `SELECT COALESCE(SUM(CASE direction WHEN 'in' THEN amount_cents ELSE -amount_cents END), 0) AS backed
+       FROM custody_entries WHERE user_id = ? AND currency = ?`,
+    )
+    .get(userId, currency).backed;
+}
+
+export function recordUserIn(db, entry) {
+  write(db, { ...entry, direction: DIRECTION.IN });
+}
+
+export function recordUserOut(db, entry) {
   write(db, { ...entry, direction: DIRECTION.OUT });
 }
 

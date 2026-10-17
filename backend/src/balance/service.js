@@ -16,18 +16,19 @@ export function balanceFor(userId, currency, { db = getDb() } = {}) {
 }
 
 // Must run inside a transaction when it is part of a larger change.
-export function credit(userId, currency, amountCents, reason, paymentId, { db = getDb() } = {}) {
+// referenceId ties a movement to a deposit or withdrawal (prompt 28). Those are not payments, so paymentId stays null.
+export function credit(userId, currency, amountCents, reason, paymentId, { db = getDb(), referenceId = null } = {}) {
   db.prepare(
     `INSERT INTO balances (user_id, currency, balance_cents, updated_at) VALUES (?, ?, ?, ?)
      ON CONFLICT (user_id, currency) DO UPDATE SET balance_cents = balance_cents + excluded.balance_cents, updated_at = excluded.updated_at`,
   ).run(userId, currency, amountCents, iso());
   db.prepare(
-    'INSERT INTO ledger_entries (user_id, currency, amount_cents, reason, payment_id) VALUES (?, ?, ?, ?, ?)',
-  ).run(userId, currency, amountCents, reason, paymentId);
+    'INSERT INTO ledger_entries (user_id, currency, amount_cents, reason, payment_id, reference_id) VALUES (?, ?, ?, ?, ?, ?)',
+  ).run(userId, currency, amountCents, reason, paymentId, referenceId);
 }
 
 // Refuses to go below zero. The CHECK constraint on the table is a second guard.
-export function debit(userId, currency, amountCents, reason, paymentId, { db = getDb() } = {}) {
+export function debit(userId, currency, amountCents, reason, paymentId, { db = getDb(), referenceId = null } = {}) {
   if (balanceFor(userId, currency, { db }) < amountCents) {
     throw new AppError('insufficient_balance', 409, 'Your app balance is not enough for this payment.');
   }
@@ -38,6 +39,6 @@ export function debit(userId, currency, amountCents, reason, paymentId, { db = g
     currency,
   );
   db.prepare(
-    'INSERT INTO ledger_entries (user_id, currency, amount_cents, reason, payment_id) VALUES (?, ?, ?, ?, ?)',
-  ).run(userId, currency, -amountCents, reason, paymentId);
+    'INSERT INTO ledger_entries (user_id, currency, amount_cents, reason, payment_id, reference_id) VALUES (?, ?, ?, ?, ?, ?)',
+  ).run(userId, currency, -amountCents, reason, paymentId, referenceId);
 }
