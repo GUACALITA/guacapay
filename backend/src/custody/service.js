@@ -8,12 +8,13 @@ import { getWalletAddress } from '../providers/openpayments.js';
 
 const DIRECTION = Object.freeze({ IN: 'in', OUT: 'out' });
 
-function write(db, { paymentId, transferId, amountCents, currency, direction }) {
+// An entry belongs to a payment or to a pool, never both.
+function write(db, { paymentId = null, poolId = null, transferId, amountCents, currency, direction }) {
   try {
     db.prepare(
-      `INSERT INTO custody_entries (id, payment_id, amount_cents, currency, direction, transfer_id)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-    ).run(randomUUID(), paymentId, amountCents, currency, direction, transferId ?? null);
+      `INSERT INTO custody_entries (id, payment_id, pool_id, amount_cents, currency, direction, transfer_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).run(randomUUID(), paymentId, poolId, amountCents, currency, direction, transferId ?? null);
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_TRIGGER' && err.message.includes('custody_out_exceeds_in')) {
       throw new AppError('custody_out_exceeds_in', 409, 'The custody wallet does not hold enough for this payment.');

@@ -10,6 +10,7 @@ import { attachLiveStatus } from './ws/live-status.js';
 import { mailerFromConfig } from './email/index.js';
 import { checkCustodyWallet } from './custody/service.js';
 import { startSubscriptionJob } from './subscriptions/job.js';
+import { startPoolJob } from './pools/job.js';
 
 try {
   const applied = runMigrations();
@@ -43,3 +44,4 @@ server.listen(config.port, '0.0.0.0', () => {
 
 startPaymentPoller({ gateway, mailer });
 startSubscriptionJob();
+startPoolJob();

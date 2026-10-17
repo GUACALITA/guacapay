@@ -2,8 +2,25 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** code and tests written; **tests not run**, at the user's request. Verification is pending.
+**Files produced:** `backend/migrations/012-pools.sql`, `backend/src/pools/{service,routes,job}.js`, `backend/test/pools.test.js`; edited `backend/src/custody/service.js` (entries belong to a payment or a pool), `backend/src/app.js` (`/api/pools`), `backend/src/server.js` (hourly job)
+
+**Choices made in this step:**
+- The migration is 012, because 011 is subscriptions.
+- Custody entries can belong to a pool, not only to a payment. The table is rebuilt in migration 012 (nothing references it), and the out-within-in trigger now checks per payment or per pool.
+- Beyond the listed columns, added: `pools.organizer_wallet_id` (where the payout goes), `pools.closes_at` (the collection closing date), `pools.period_due_at` (for "late"), `pools.current_period`, `pool_members.grant_id` (each member's permission), and a `pool_payouts` table (one payout per pool period, unique).
+- The pool status adds `closing`: while a payout is in progress, no contribution is accepted, so the amount cannot change under it.
+- A payout's amount is recomputed from the completed contributions each time it starts, so a retry never pays a stale total.
+- A failed payout returns the pool to `active`, and the hourly job retries it. A payout left pending (for example, after a restart) is resumed by the same job.
+- Collection consent uses purpose `link` with a limit of one share; tanda consent uses `recurring` with the pool's period.
+- Late = no completed contribution for the current period, and the due date has passed. Late members are shown to the organizer and members; nothing is sent to them.
+
+**Not verified yet:**
+- The `interval` format of tanda consents (see `docs/OPEN_PAYMENTS.md`, not verified).
+- A real payout between two test wallets (manual check).
+- A collection that closes by date with money below the goal pays the partial total to the organizer. This is what the prompt says; confirm it is wanted.
+
+## Prompt
 
 ## Prompt
 
