@@ -114,7 +114,7 @@ async function execute(transfer, deps, db) {
   if (!grant) {
     throw new AppError('no_active_grant', 409, 'The sending wallet has no active permission.');
   }
-  const senderToken = getAccessToken(grant.id, { db, now: deps.now() });
+  const senderToken = await getAccessToken(grant.id, { db, now: deps.now() });
 
   const senderDoc = await deps.readWallet(sender.wallet_url);
   const receiverDoc = await deps.readWallet(transfer.to_wallet_url);
@@ -208,7 +208,10 @@ async function execute(transfer, deps, db) {
     const state = String(outgoing.state ?? '').toUpperCase();
     // The ILP testnet may signal failure via `failed: true` instead of state='FAILED'.
     const failed = state === 'FAILED' || outgoing.failed === true;
-    if (state === 'COMPLETED') {
+    // The testnet does not always report a state. A payment whose full debit amount was sent is complete.
+    const fullySent =
+      outgoing.sentAmount?.value !== undefined && outgoing.sentAmount.value === outgoing.debitAmount?.value;
+    if (state === 'COMPLETED' || (!failed && fullySent)) {
       saveLeg(db, transfer.id, 'outgoing', outgoingLeg.remote_id, LEG.COMPLETED);
       return 'completed';
     }
