@@ -87,7 +87,8 @@ function wirePayForm(paymentId, amountCents) {
     try {
       const outcome = await payWithWallet(api, paymentId, walletId);
       renderStatus(outcome.status);
-      const needsConsent = ['no_active_grant', 'grant_expired'].includes(outcome.reason);
+      // A 403 from the network means the permission is exhausted or expired, so a new approval is needed.
+      const needsConsent = ['no_active_grant', 'grant_expired', 'openpayments_rejected'].includes(outcome.reason);
       if (needsConsent) {
         $('pay-status').textContent = 'Redirecting to Interledger to authorize the payment…';
         const approvalUrl = await renewConsent(walletId);
