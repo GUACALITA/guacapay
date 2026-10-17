@@ -9,15 +9,12 @@ import {
   getPaymentForUser,
   listPaymentsForUser,
   toPublicPayment,
-  transitionPayment,
 } from './service.js';
-import { getDb } from '../db.js';
 import { STATUS } from './states.js';
 import { startCheckout } from './checkout.js';
 import { payWithBalance } from '../balance/pay.js';
 import { payFromWallet } from '../transfers/payments.js';
 import { issueClaim } from '../claims/service.js';
-import { recordIn } from '../custody/service.js';
 import { unconfiguredMailer } from '../auth/mailer.js';
 import { logger } from '../logger.js';
 import { requireCardRail } from '../rails.js';
@@ -106,30 +103,6 @@ export function createPaymentsRouter({ gateway = null, mailer = unconfiguredMail
       res.send(svg);
     }),
   );
-
-  // DEV ONLY: marks a payment as paid and issues the claim email, bypassing the testnet.
-  // Disabled in production (NODE_ENV=production).
-  if (process.env.DEMO_MODE === 'true') {
-    router.post(
-      '/:id/dev-force-paid',
-      route(async (req, res) => {
-        const db = getDb();
-        const payment = getPaymentForUser(req.params.id, req.user.id);
-        if (!['created', 'awaiting_payment', 'failed'].includes(payment.status)) {
-          throw new AppError('payment_not_payable', 409, 'Payment is already past the payable state.');
-        }
-        db.transaction(() => {
-          if (payment.status !== STATUS.PAID) {
-            transitionPayment(payment.id, STATUS.PAID, { db });
-            // Register a fake custody receipt so assertCustodyHolds passes on claim.
-            recordIn(db, { paymentId: payment.id, amountCents: payment.amount_cents, currency: payment.currency, transferId: null });
-          }
-        })();
-        const claim = await issueClaim(payment.id, { mailer, db });
-        res.json({ status: 'paid', claim });
-      }),
-    );
-  }
 
   // Starts the Rapyd checkout for a created payment and returns where to send the payer.
   router.post(

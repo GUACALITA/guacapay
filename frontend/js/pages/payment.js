@@ -65,9 +65,7 @@ async function loadWallets(currency) {
 }
 
 async function renewConsent(walletId, limitCents) {
-  const params = new URLSearchParams(location.search);
-  params.set('auto_force', '1');
-  const returnTo = location.pathname + '?' + params.toString();
+  const returnTo = location.pathname + location.search;
   const resp = await fetch(`/api/wallets/${walletId}/renew-consent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${api.getToken()}` },
@@ -107,45 +105,11 @@ function wirePayForm(paymentId, amountCents) {
   });
 }
 
-function wireDevForce(paymentId) {
-  $('dev-section').hidden = false;
-  $('dev-force-btn').addEventListener('click', async () => {
-    $('dev-force-btn').disabled = true;
-    $('dev-status').textContent = 'Forzando pago…';
-    try {
-      const resp = await fetch(`/api/payments/${encodeURIComponent(paymentId)}/dev-force-paid`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${api.getToken()}` },
-      });
-      const data = await resp.json();
-      if (data.status === 'paid') {
-        $('dev-status').textContent = '✅ Pago forzado — correo de reclamo enviado a MailPit.';
-        renderStatus('claimable');
-        $('dev-section').hidden = true;
-      } else {
-        $('dev-status').textContent = data.error?.message ?? 'Error inesperado.';
-        $('dev-force-btn').disabled = false;
-      }
-    } catch {
-      $('dev-status').textContent = 'No se pudo contactar el servidor.';
-      $('dev-force-btn').disabled = false;
-    }
-  });
-}
-
 async function start() {
   const searchParams = new URLSearchParams(location.search);
   const paymentId = searchParams.get('id');
-  const autoForce = searchParams.get('auto_force') === '1';
   if (!paymentId) { showPageError('No payment selected.'); return; }
   if (!api.isSignedIn()) { $('signed-out').hidden = false; return; }
-
-  // Remove auto_force from the URL so a refresh does not re-trigger it.
-  if (autoForce) {
-    const clean = new URL(location.href);
-    clean.searchParams.delete('auto_force');
-    history.replaceState(null, '', clean.toString());
-  }
 
   try {
     const payment = await fetchPayment(api, paymentId);
@@ -154,8 +118,6 @@ async function start() {
     renderStatus(payment.status);
     if (!FINAL_STATUSES.has(payment.status)) loadQR(paymentId);
     if (payment.status === 'created' && (await loadWallets(payment.currency))) wirePayForm(paymentId, payment.amount_cents);
-    if (PAYABLE_STATUSES.has(payment.status)) wireDevForce(paymentId);
-    if (autoForce && PAYABLE_STATUSES.has(payment.status)) $('dev-force-btn').click();
   } catch (error) {
     if (error.code === 'unauthorized' || error.code === 'session_expired') {
       $('signed-out').hidden = false;

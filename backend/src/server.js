@@ -38,14 +38,8 @@ checkCustodyWallet().then((report) => {
 const gateway = createGatewayClient({ baseUrl: config.gateway.url, token: config.gateway.token });
 const mailer = mailerFromConfig();
 
-// In demo mode the testnet is unreliable, so the payout to the recipient is skipped.
-// The claim still records correctly; no real money is moved either way on the testnet.
-const demoTransfer =
-  process.env.DEMO_MODE === 'true'
-    ? async () => ({ id: null, status: 'completed' })
-    : undefined;
-
-const app = createApp({ gateway, mailer, transfer: demoTransfer });
+// Payouts always run the real transfer. No demo path marks a payment or claim as paid without money moving.
+const app = createApp({ gateway, mailer });
 
 const server = createServer(app);
 attachLiveStatus(server);
