@@ -2,8 +2,20 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** review done and recorded; one high finding fixed (F9) with a regression test written but **not run**; one high finding (F10) **open and needs the owner** (credentials in shared history). Tests not run, at the owner's request.
+**Files produced:** `docs/SECURITY_REVIEW.md` (new section for prompt 32); `backend/test/security-review.test.js`; edited `backend/src/providers/openpayments.js` (`assertAllowedHost` before every Open Payments call), `backend/src/config.js` (`openPaymentsHosts`), `.env.example` (`OPEN_PAYMENTS_HOSTS`, name only)
+
+**Choices made in this step:**
+- Fixed F9 (server contacts user-chosen hosts) by an allow-list in configuration, checked before any request. Only `allowHttp`, which tests use with a local server, skips it.
+- Did not fix F10 (commit `7c496ae` with example values is in `origin/main`). Rewriting shared history is destructive and needs the owner's decision; the values need rotation either way.
+- Did not change git state. Read-only commands only.
+- Dependency audit run inside Node containers from the lockfile, so `node_modules` on this machine was not touched.
+
+**Not verified yet:**
+- The regression test for F9 (not run).
+- The remaining open findings (F10 to F15) are recorded in `docs/SECURITY_REVIEW.md` with their owners' actions.
+
+## Prompt
 
 ## Prompt
 

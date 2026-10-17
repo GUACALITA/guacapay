@@ -70,6 +70,13 @@ const claimWalletHosts = (process.env.CLAIM_WALLET_HOSTS || 'ilp.interledger-tes
   .map((host) => host.trim().toLowerCase())
   .filter(Boolean);
 
+// Hosts the server may contact for Open Payments: wallet, authorization and resource servers. Anything else is refused
+// before a request is sent, so a user cannot make the server call hosts they choose.
+const openPaymentsHosts = (process.env.OPEN_PAYMENTS_HOSTS || 'ilp.interledger-test.dev,auth.interledger-test.dev')
+  .split(',')
+  .map((host) => host.trim().toLowerCase())
+  .filter(Boolean);
+
 const currencies = (process.env.PAYMENT_CURRENCIES || 'USD')
   .split(',')
   .map((code) => code.trim().toUpperCase())
@@ -125,6 +132,7 @@ export const config = {
   claims: {
     walletHosts: claimWalletHosts,
   },
+  openPaymentsHosts,
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: readInteger('SMTP_PORT', 1025, { min: 1, max: 65535 }),

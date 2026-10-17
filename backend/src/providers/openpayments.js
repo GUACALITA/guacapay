@@ -68,6 +68,21 @@ function checkWalletUrl(raw, { allowHttp = false } = {}) {
   return url.toString();
 }
 
+// The servers the app may call. A wallet address or a server named by a wallet document on any other host is refused
+// before a request is sent: otherwise the server would contact hosts a user chose (finding F9 in docs/SECURITY_REVIEW.md).
+export function assertAllowedHost(raw) {
+  let host = '';
+  try {
+    host = new URL(String(raw ?? '')).hostname.toLowerCase();
+  } catch {
+    host = '';
+  }
+  if (!config.openPaymentsHosts.includes(host)) {
+    throw new AppError('wallet_host_not_allowed', 400, 'That wallet host is not accepted here.');
+  }
+  return raw;
+}
+
 function isNetworkError(err) {
   const code = err?.code ?? err?.cause?.code;
   return err?.status === undefined && NETWORK_CODES.has(code);
@@ -112,6 +127,7 @@ async function callOnce(operation, fn) {
 // Asks the wallet's authorization server for a grant. The wallet answers with an approval URL (interact.redirect)
 // and a continuation (continue.uri and continue.access_token.value), unless it grants without interaction.
 export async function startGrant({ authServer, access, finishUri, nonce }) {
+  assertAllowedHost(authServer);
   const client = await getClient();
   return callOnce('grant.request', () =>
     client.grant.request(
@@ -126,6 +142,7 @@ export async function startGrant({ authServer, access, finishUri, nonce }) {
 
 // Finishes a grant after the user approved it, using the interaction reference the wallet sent back.
 export async function continueGrant({ continueUri, continueToken, interactRef }) {
+  assertAllowedHost(continueUri);
   const client = await getClient();
   return callOnce('grant.continue', () =>
     client.grant.continue({ url: continueUri, accessToken: continueToken }, { interact_ref: interactRef }),
@@ -135,6 +152,7 @@ export async function continueGrant({ continueUri, continueToken, interactRef })
 // Asks for a permission that the wallet grants without a user step (quotes, incoming payments).
 // Returns the access token, or nothing when the wallet asks for interaction.
 export async function requestNonInteractiveGrant({ authServer, access }) {
+  assertAllowedHost(authServer);
   const client = await getClient();
   const grant = await callOnce('grant.request', () => client.grant.request({ url: authServer }, { access_token: { access } }));
   return grant.access_token ? grant.access_token.value : null;
@@ -142,6 +160,7 @@ export async function requestNonInteractiveGrant({ authServer, access }) {
 
 // Creates an incoming payment at the receiver's wallet. Amounts are strings in the asset's scale.
 export async function createIncomingPayment({ resourceServer, accessToken, walletAddressId, value, assetCode, assetScale, expiresAt }) {
+  assertAllowedHost(resourceServer);
   const client = await getClient();
   return callOnce('incomingPayment.create', () =>
     client.incomingPayment.create(
@@ -153,6 +172,7 @@ export async function createIncomingPayment({ resourceServer, accessToken, walle
 
 // Prices a fixed debit from the sender's wallet to an incoming payment.
 export async function createQuote({ resourceServer, accessToken, walletAddressId, receiverId, value, assetCode, assetScale }) {
+  assertAllowedHost(resourceServer);
   const client = await getClient();
   return callOnce('quote.create', () =>
     client.quote.create(
@@ -169,6 +189,7 @@ export async function createQuote({ resourceServer, accessToken, walletAddressId
 
 // Sends the money: an outgoing payment from the sender's wallet, using a priced quote.
 export async function createOutgoingPayment({ resourceServer, accessToken, walletAddressId, quoteId }) {
+  assertAllowedHost(resourceServer);
   const client = await getClient();
   return callOnce('outgoingPayment.create', () =>
     client.outgoingPayment.create({ url: resourceServer, accessToken }, { walletAddress: walletAddressId, quoteId }),
@@ -177,6 +198,7 @@ export async function createOutgoingPayment({ resourceServer, accessToken, walle
 
 // Reads an outgoing payment's state. Reads may be retried.
 export async function getOutgoingPayment({ url, accessToken }) {
+  assertAllowedHost(url);
   const client = await getClient();
   return withRetry('outgoingPayment.get', () => client.outgoingPayment.get({ url, accessToken }));
 }
@@ -184,6 +206,8 @@ export async function getOutgoingPayment({ url, accessToken }) {
 // Reads a wallet's public document (no keys needed). Used before linking a wallet.
 export async function getWalletAddress(rawUrl, options = {}) {
   const url = checkWalletUrl(rawUrl, options);
+  // allowHttp is only set by tests, which use a local server. Production never sets it.
+  if (!options.allowHttp) assertAllowedHost(url);
   return withRetry('walletAddress.get', async () => {
     const client = await getPublicClient();
     const wallet = await client.walletAddress.get({ url });
