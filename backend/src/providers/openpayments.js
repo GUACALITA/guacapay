@@ -132,6 +132,55 @@ export async function continueGrant({ continueUri, continueToken, interactRef })
   );
 }
 
+// Asks for a permission that the wallet grants without a user step (quotes, incoming payments).
+// Returns the access token, or nothing when the wallet asks for interaction.
+export async function requestNonInteractiveGrant({ authServer, access }) {
+  const client = await getClient();
+  const grant = await callOnce('grant.request', () => client.grant.request({ url: authServer }, { access_token: { access } }));
+  return grant.access_token ? grant.access_token.value : null;
+}
+
+// Creates an incoming payment at the receiver's wallet. Amounts are strings in the asset's scale.
+export async function createIncomingPayment({ resourceServer, accessToken, walletAddressId, value, assetCode, assetScale, expiresAt }) {
+  const client = await getClient();
+  return callOnce('incomingPayment.create', () =>
+    client.incomingPayment.create(
+      { url: resourceServer, accessToken },
+      { walletAddress: walletAddressId, incomingAmount: { value, assetCode, assetScale }, expiresAt },
+    ),
+  );
+}
+
+// Prices a fixed debit from the sender's wallet to an incoming payment.
+export async function createQuote({ resourceServer, accessToken, walletAddressId, receiverId, value, assetCode, assetScale }) {
+  const client = await getClient();
+  return callOnce('quote.create', () =>
+    client.quote.create(
+      { url: resourceServer, accessToken },
+      {
+        walletAddress: walletAddressId,
+        receiver: receiverId,
+        debitAmount: { value, assetCode, assetScale },
+        method: 'ilp',
+      },
+    ),
+  );
+}
+
+// Sends the money: an outgoing payment from the sender's wallet, using a priced quote.
+export async function createOutgoingPayment({ resourceServer, accessToken, walletAddressId, quoteId }) {
+  const client = await getClient();
+  return callOnce('outgoingPayment.create', () =>
+    client.outgoingPayment.create({ url: resourceServer, accessToken }, { walletAddress: walletAddressId, quoteId }),
+  );
+}
+
+// Reads an outgoing payment's state. Reads may be retried.
+export async function getOutgoingPayment({ url, accessToken }) {
+  const client = await getClient();
+  return withRetry('outgoingPayment.get', () => client.outgoingPayment.get({ url, accessToken }));
+}
+
 // Reads a wallet's public document (no keys needed). Used before linking a wallet.
 export async function getWalletAddress(rawUrl, options = {}) {
   const url = checkWalletUrl(rawUrl, options);

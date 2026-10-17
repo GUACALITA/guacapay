@@ -2,8 +2,20 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** code and tests written; **tests not run**, at the user's request. Verification is pending.
+**Files produced:** `backend/migrations/007-transfers.sql`, `backend/src/transfers/engine.js`, `backend/test/transfers.test.js`; edited `backend/src/providers/openpayments.js` (`requestNonInteractiveGrant`, `createIncomingPayment`, `createQuote`, `createOutgoingPayment`, `getOutgoingPayment`)
+
+**Choices made in this step:**
+- The outgoing leg is stored before its call, with no remote ID. If a retry finds that leg without an answer, the transfer stays pending with `outgoing_state_unknown`, and nobody sends a second payment by accident.
+- The incoming and quote legs are stored after their calls. They move no money, so a repeat only creates an extra incoming payment or quote.
+- A timeout while waiting for the outgoing payment leaves the transfer `pending` with `leg_timeout`. It is never marked failed, because the money may still complete.
+- Definitive refusals (asset mismatch, failed payment, rejected request) mark the transfer `failed`. Fixable problems (no permission, expired permission, network down) leave it `pending` with the reason.
+- The engine does not change payments. The caller decides what a completed transfer means.
+
+**Not verified yet:**
+- That the receiver's incoming-payment permission is granted without interaction on the real network. This was taken from the reference implementation's behavior, not yet confirmed. If the test network asks for approval, the engine refuses with `receiver_interaction_required`.
+- The field names of the outgoing payment's `state` on the real network (the code compares them in upper case: COMPLETED, FAILED).
+- A real transfer between two test wallets (prompt 31).
 
 ## Prompt
 
