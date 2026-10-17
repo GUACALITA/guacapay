@@ -7,6 +7,7 @@ import { AppError } from '../errors.js';
 import { normalizeEmail } from '../validation.js';
 import { STATUS, assertTransition } from './states.js';
 import { publishPaymentUpdated } from './events.js';
+import { signPayment } from '../pqsec.js';
 
 const MESSAGE_MAX_LENGTH = 500;
 const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_-]{8,100}$/;
@@ -118,10 +119,11 @@ export function createPayment({ senderId, body, idempotencyKey, purpose = 'trans
 
     const id = randomUUID();
     const now = isoNow();
+    const pqSig = signPayment(id, input.recipientEmail, input.amountCents, input.currency);
     db.prepare(
       `INSERT INTO payments (id, sender_id, recipient_email, amount_cents, currency, status, message,
-         idempotency_key, created_at, updated_at, purpose, parent_split_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         idempotency_key, created_at, updated_at, purpose, parent_split_id, pq_sig)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       id,
       senderId,
@@ -135,6 +137,7 @@ export function createPayment({ senderId, body, idempotencyKey, purpose = 'trans
       now,
       purpose,
       parentSplitId,
+      pqSig,
     );
     recordEvent(db, id, null, STATUS.CREATED);
 

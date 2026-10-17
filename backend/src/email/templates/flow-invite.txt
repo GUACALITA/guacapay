@@ -1,0 +1,12 @@
+{{senderEmail}} invited you to a payment flow on guacapay
+
+Flow: {{flowTitle}}
+Type: {{flowType}}
+{{amountLine}}
+
+{{message}}
+
+Open guacapay to complete this payment:
+{{baseUrl}}
+
+guacapay — post-quantum payments

@@ -14,4 +14,7 @@ export const unconfiguredMailer = {
   async sendPaymentConfirmation() {
     throw notConfigured();
   },
+  async sendFlowInvite() {
+    throw notConfigured();
+  },
 };

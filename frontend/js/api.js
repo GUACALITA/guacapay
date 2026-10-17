@@ -84,6 +84,7 @@ export function createApi({ baseUrl = '', fetchImpl = (...args) => globalThis.fe
   return {
     get: (path, options) => request('GET', path, options),
     post: (path, body, options) => request('POST', path, { ...options, body }),
+    del: (path, options) => request('DELETE', path, options),
     getToken,
     setToken,
     isSignedIn: () => getToken() !== null,

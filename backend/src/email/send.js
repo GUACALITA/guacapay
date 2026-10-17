@@ -9,12 +9,14 @@ const TEMPLATE_FILE = Object.freeze({
   loginCode: 'login-code',
   claimLink: 'claim-link',
   paymentConfirmation: 'payment-confirmation',
+  flowInvite: 'flow-invite',
 });
 
 const SUBJECT = Object.freeze({
   loginCode: 'Your guacapay sign-in code',
   claimLink: 'You have money waiting on guacapay',
   paymentConfirmation: 'Your payment was claimed',
+  flowInvite: 'You were invited to a payment flow on guacapay',
 });
 
 export function recipientReference(email) {
@@ -46,6 +48,18 @@ export function createMailer({ transport, from }) {
       send('paymentConfirmation', email, {
         amount: details.amountText,
         recipient: details.recipientEmail,
+      }),
+
+    sendFlowInvite: (email, details) =>
+      send('flowInvite', email, {
+        senderEmail: details.senderEmail,
+        flowTitle: details.flowTitle,
+        flowType: details.flowType,
+        amountLine: details.amountLine ?? '',
+        amountBlock: details.amountBlock ?? '',
+        messageBlock: details.messageBlock ?? '',
+        message: details.message ?? '',
+        baseUrl: details.baseUrl,
       }),
   };
 }

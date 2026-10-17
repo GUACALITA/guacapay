@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Payment flow</title></head>
+<body style="margin:0;padding:0;background:#0a0e14;font-family:system-ui,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0e14;padding:32px 16px">
+<tr><td align="center">
+<table width="100%" style="max-width:480px;background:#141c28;border:1px solid #1f2d3d;border-radius:16px;overflow:hidden">
+  <tr><td style="background:linear-gradient(135deg,#00e898,#3d8bff);padding:24px 28px">
+    <p style="margin:0;font-size:1.3rem;font-weight:800;color:#071a0e;letter-spacing:-.02em">guacapay</p>
+    <p style="margin:6px 0 0;font-size:.9rem;color:rgba(7,26,14,.7)">Payment flow invitation</p>
+  </td></tr>
+  <tr><td style="padding:28px">
+    <p style="margin:0 0 6px;font-size:.85rem;color:#8b9ab5">FROM</p>
+    <p style="margin:0 0 20px;font-size:1rem;font-weight:600;color:#e8edf4">{{senderEmail}}</p>
+    <p style="margin:0 0 6px;font-size:.85rem;color:#8b9ab5">FLOW</p>
+    <p style="margin:0 0 4px;font-size:1.15rem;font-weight:700;color:#e8edf4">{{flowTitle}}</p>
+    <p style="margin:0 0 20px;font-size:.85rem;color:#8b9ab5;text-transform:uppercase;letter-spacing:.06em">{{flowType}}</p>
+    {{amountBlock}}
+    {{messageBlock}}
+    <a href="{{baseUrl}}" style="display:block;margin-top:24px;padding:13px 20px;background:linear-gradient(135deg,#00e898,#00c47e);color:#071a0e;font-weight:700;text-decoration:none;border-radius:10px;text-align:center;font-size:.95rem">View &amp; Pay →</a>
+  </td></tr>
+  <tr><td style="padding:16px 28px;border-top:1px solid #1f2d3d">
+    <p style="margin:0;font-size:.75rem;color:#5a6a82">🔐 All flows are signed with Dilithium3 post-quantum cryptography.</p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

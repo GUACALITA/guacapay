@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@interledger/open-payments": "^7.4.0",
+    "@noble/post-quantum": "^0.7.1",
     "better-sqlite3": "^11.10.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
