@@ -8,7 +8,7 @@ import { normalizeEmail } from '../validation.js';
 export const CODE_TTL_MS = 10 * 60 * 1000;
 export const MAX_CODE_ATTEMPTS = 5;
 export const EMAIL_WINDOW_MS = 15 * 60 * 1000;
-export const EMAIL_REQUEST_LIMIT = 3;
+export const EMAIL_REQUEST_LIMIT = process.env.DEMO_MODE === 'true' ? 20 : 3;
 
 const CODE_PATTERN = /^\d{6}$/;
 

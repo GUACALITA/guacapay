@@ -41,9 +41,23 @@
 
       <form id="claim-destination-form" novalidate hidden>
         <h2>3. Where should the money go?</h2>
-        <p class="muted">Paste your wallet address. It must start with https.</p>
-        <label for="claim-destination">Wallet address</label>
-        <input id="claim-destination" name="destinationWalletAddress" type="url" autocomplete="off" required>
+
+        <div id="wallet-pick-section" hidden>
+          <label for="claim-wallet-select">My linked wallets</label>
+          <select id="claim-wallet-select">
+            <option value="">— Select a wallet —</option>
+          </select>
+          <p class="muted wallet-or-hint">
+            Or <a href="#" id="claim-enter-manual">enter a different address</a>
+          </p>
+        </div>
+
+        <div id="wallet-manual-section">
+          <p class="muted">Paste your wallet address. It must start with https.</p>
+          <label for="claim-destination">Wallet address</label>
+          <input id="claim-destination" name="destinationWalletAddress" type="url" autocomplete="off">
+        </div>
+
         <p class="field-error" id="claim-destination-error" hidden></p>
         <button type="submit" id="submit-claim">Claim money</button>
       </form>

@@ -312,3 +312,8 @@ img {
   margin: 10px 0 0;
   font-size: 0.875rem;
 }
+
+.dev-card { border: 2px dashed #f59e0b; background: #fffbeb; }
+.dev-title { color: #92400e; margin-top: 0; }
+.dev-btn { background: #f59e0b; color: #1c1917; }
+.wallet-or-hint { margin: 6px 0 0; font-size: 0.875rem; }

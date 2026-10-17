@@ -1,6 +1,4 @@
 // The one place the browser talks to the backend.
-// The session token lives in sessionStorage only: it clears when the tab closes and is never written to localStorage.
-
 const TOKEN_KEY = 'guacapay.session';
 const FALLBACK_MESSAGE = 'Something went wrong. Please try again.';
 
@@ -15,7 +13,7 @@ export class ApiError extends Error {
   }
 }
 
-export function createApi({ baseUrl = '', fetchImpl = (...args) => globalThis.fetch(...args), storage = globalThis.sessionStorage } = {}) {
+export function createApi({ baseUrl = '', fetchImpl = (...args) => globalThis.fetch(...args), storage = globalThis.localStorage } = {}) {
   // Storage can be blocked (private mode, disabled site data). Then the user simply stays signed out.
   function getToken() {
     try {

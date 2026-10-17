@@ -204,13 +204,16 @@ async function execute(transfer, deps, db) {
   for (;;) {
     const outgoing = await deps.getOutgoing({ url: outgoingLeg.remote_id, accessToken: senderToken });
     const state = String(outgoing.state ?? '').toUpperCase();
+    // The ILP testnet may signal failure via `failed: true` instead of state='FAILED'.
+    const failed = state === 'FAILED' || outgoing.failed === true;
     if (state === 'COMPLETED') {
       saveLeg(db, transfer.id, 'outgoing', outgoingLeg.remote_id, LEG.COMPLETED);
       return 'completed';
     }
-    if (state === 'FAILED') {
+    if (failed) {
+      const reason = outgoing.metadata?.cancellationReason ?? 'payment failed on the network';
       saveLeg(db, transfer.id, 'outgoing', outgoingLeg.remote_id, LEG.FAILED);
-      throw new AppError('outgoing_failed', 422, 'The test network reported the payment as failed.');
+      throw new AppError('outgoing_failed', 422, `The test network reported the payment as failed: ${reason}`);
     }
     if (deps.now() >= deadline) {
       return null;

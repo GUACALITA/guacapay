@@ -1,6 +1,6 @@
 // Wiring for claim.html: email, code, then destination. The token comes from the link and is kept only in memory.
 import { api } from '../api.js';
-import { confirmClaim, sendClaimCode } from '../flows.js';
+import { confirmClaim, fetchWallets, sendClaimCode } from '../flows.js';
 import { messageForClaimResult, messageForError } from '../messages.js';
 
 const $ = (id) => document.getElementById(id);
@@ -65,12 +65,44 @@ $('claim-code-form').addEventListener('submit', (event) => {
   code = entered;
   showStatus('');
   showStep('claim-destination-form');
+  tryLoadLinkedWallets();
   $('claim-destination').focus();
 });
 
+// Load signed-in user's linked wallets into the step-3 selector (optional).
+async function tryLoadLinkedWallets() {
+  if (!api.isSignedIn()) return;
+  try {
+    const wallets = (await fetchWallets(api)).filter((w) => w.status === 'linked');
+    if (wallets.length === 0) return;
+    const sel = $('claim-wallet-select');
+    wallets.forEach((w) => sel.append(new Option(`${w.wallet_url} (${w.asset_code})`, w.wallet_url)));
+    $('wallet-pick-section').hidden = false;
+    $('wallet-manual-section').hidden = true;
+
+    sel.addEventListener('change', () => {
+      if (sel.value) {
+        $('claim-destination').value = sel.value;
+        $('wallet-manual-section').hidden = true;
+      }
+    });
+
+    $('claim-enter-manual').addEventListener('click', (e) => {
+      e.preventDefault();
+      $('wallet-manual-section').hidden = false;
+      $('claim-destination').value = '';
+      $('claim-destination').focus();
+      sel.value = '';
+    });
+  } catch {
+    // Signed in but wallets couldn't load — fall back to manual input silently.
+  }
+}
+
 $('claim-destination-form').addEventListener('submit', async (event) => {
   event.preventDefault();
-  const destination = $('claim-destination').value.trim();
+  // Value may come from the select (populated into the input) or typed manually.
+  const destination = $('claim-destination').value.trim() || $('claim-wallet-select').value;
   const looksValid = /^https:\/\/\S+\/\S+$/.test(destination);
   setFieldError('claim-destination-error', looksValid ? null : 'Enter a wallet address that starts with https.');
   if (!looksValid) return;

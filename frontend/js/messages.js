@@ -35,6 +35,7 @@ const ERROR_TEXT = Object.freeze({
   rate_limited: 'Too many attempts. Wait a few minutes and try again.',
   email_not_configured: 'Sign-in email is not available yet. Try again later.',
   email_failed: 'We could not send the email. Try again shortly.',
+  outgoing_failed: 'The wallet rejected the transfer. Check your testnet wallet has enough funds.',
   insufficient_balance: 'Your app balance is not enough for this payment. Recharge it with Rapyd, or pay with card.',
   payment_not_payable: 'This payment can no longer be paid from the app balance.',
   wallet_not_linked: 'Choose one of your linked wallets to pay from.',

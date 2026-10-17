@@ -20,7 +20,7 @@ const TRANSITIONS = Object.freeze({
   [STATUS.CLAIMED]: [STATUS.COMPLETED, STATUS.FAILED],
   [STATUS.COMPLETED]: [],
   [STATUS.EXPIRED]: [],
-  [STATUS.FAILED]: [],
+  [STATUS.FAILED]: [STATUS.PAID],
 });
 
 export class InvalidTransitionError extends Error {
