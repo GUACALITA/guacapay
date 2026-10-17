@@ -76,9 +76,11 @@ async function tryLoadLinkedWallets() {
     const wallets = (await fetchWallets(api)).filter((w) => w.status === 'linked');
     if (wallets.length === 0) return;
     const sel = $('claim-wallet-select');
+    sel.append(new Option('— Elige tu wallet —', ''));
     wallets.forEach((w) => sel.append(new Option(`${w.wallet_url} (${w.asset_code})`, w.wallet_url)));
+    sel.value = '';
     $('wallet-pick-section').hidden = false;
-    $('wallet-manual-section').hidden = true;
+    $('wallet-manual-section').hidden = false;
 
     sel.addEventListener('change', () => {
       if (sel.value) {
@@ -112,6 +114,14 @@ $('claim-destination-form').addEventListener('submit', async (event) => {
   try {
     const result = await confirmClaim(api, { token, code, destinationWalletAddress: destination });
     showResult(messageForClaimResult(result.status));
+    if (result.approvalUrl) {
+      const link = document.createElement('a');
+      link.href = result.approvalUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'Aprobar la cuenta de la plataforma en Interledger';
+      $('claim-result-text').after(link);
+    }
   } catch (error) {
     showStatus(messageForError(error));
     // A used code cannot be tried again; go back and ask for a new one.

@@ -45,7 +45,7 @@ export function createClaimsRouter({ mailer = unconfiguredMailer, transfer = pay
         transfer,
         mailer,
       });
-      res.json({ status: result.status });
+      res.json({ status: result.status, ...(result.approvalUrl ? { approvalUrl: result.approvalUrl } : {}) });
     }),
   );
 

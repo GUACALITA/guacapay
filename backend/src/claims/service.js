@@ -180,6 +180,56 @@ function failClaim(payment, claim, address, reason, { db, now }) {
   })();
 }
 
+// Replaces a claim that is stuck before any money moved: cancels its pending payout, retires its link, and sends a new one.
+export async function reissueClaim(paymentId, { mailer, db = getDb(), now = Date.now() } = {}) {
+  const payment = db.prepare('SELECT * FROM payments WHERE id = ?').get(paymentId);
+  if (!payment || payment.status !== STATUS.CLAIMABLE) {
+    throw new AppError('claim_not_available', 409, 'This payment is not ready to claim.');
+  }
+  const payout = db.prepare("SELECT id, status FROM transfers WHERE payment_id = ? AND direction = 'out' ORDER BY created_at DESC LIMIT 1").get(paymentId);
+  if (payout?.status === 'completed') {
+    throw new AppError('already_paid_out', 409, 'The money was already sent to the recipient.');
+  }
+
+  const token = newClaimToken();
+  db.transaction(() => {
+    if (payout?.status === 'pending') {
+      db.prepare("UPDATE transfers SET status = 'failed', failure_code = 'cancelled_for_reissue', failure_detail = ?, updated_at = ? WHERE id = ?").run(
+        'Cancelled to issue a new claim link. No money was moved.',
+        iso(now),
+        payout.id,
+      );
+    }
+    db.prepare('DELETE FROM claims WHERE payment_id = ?').run(paymentId);
+    db.prepare('INSERT INTO claims (id, payment_id, token_hash, status, expires_at) VALUES (?, ?, ?, ?, ?)').run(
+      randomUUID(),
+      paymentId,
+      hashSecret(token),
+      CLAIM_STATUS.OPEN,
+      iso(now + CLAIM_TTL_MS),
+    );
+  })();
+
+  await mailer.sendClaimLink(payment.recipient_email, claimLink(token), {
+    amountText: formatAmount(payment.amount_cents, payment.currency),
+  });
+  return { reissued: true };
+}
+
+// The approval link of the platform custody wallet for this currency, if it is still waiting for approval.
+function pendingCustodyApprovalUrl(currency, db) {
+  const address = config.custody.addressByCurrency[currency] || config.custody.address;
+  if (!address) return null;
+  const row = db
+    .prepare(
+      `SELECT g.interact_uri FROM grants g JOIN wallets w ON w.id = g.wallet_id
+       WHERE w.wallet_url = ? AND g.status = 'pending' AND g.interact_uri IS NOT NULL
+       ORDER BY g.created_at DESC LIMIT 1`,
+    )
+    .get(address);
+  return row?.interact_uri ?? null;
+}
+
 // Step 2 of claiming: checks the code and destination, then runs the payout (custody to recipient) once.
 // Outcomes: completed, failed (the payout was attempted and did not go through), or processing (it is still running;
 // the claim stays in progress and resumePayouts settles it).
@@ -222,7 +272,7 @@ export async function confirmClaim({ token, code, destination, transfer = payout
     }
     if (err.retryable) {
       // The payout is still running. The claim stays in progress until resumePayouts settles it.
-      return { status: 'processing' };
+      return { status: 'processing', approvalUrl: pendingCustodyApprovalUrl(payment.currency, db) };
     }
 
     failClaim(payment, claim, address, err.code ?? 'unknown', { db, now });
