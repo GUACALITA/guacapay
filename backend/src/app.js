@@ -10,6 +10,7 @@ import { createPaymentsRouter } from './payments/routes.js';
 import { handleProviderEvent } from './payments/reconcile.js';
 import { createClaimsRouter } from './claims/routes.js';
 import { createBalanceRouter } from './balance/routes.js';
+import { createWalletsRouter } from './wallets/routes.js';
 import { issueClaim } from './claims/service.js';
 import { requireGatewayToken } from './auth/gateway-token.js';
 
@@ -52,6 +53,7 @@ export function createApp({
   gateway = null,
   gatewayToken = config.gateway.token,
   transfer,
+  walletReader,
 } = {}) {
   const app = express();
 
@@ -91,6 +93,7 @@ export function createApp({
   app.use('/api/auth', createAuthRouter({ mailer }));
   app.use('/api/payments', createPaymentsRouter({ gateway, mailer }));
   app.use('/api/balance', createBalanceRouter({ gateway }));
+  app.use('/api/wallets', createWalletsRouter({ readWallet: walletReader }));
   app.use('/api/claims', createClaimsRouter({ mailer, transfer }));
 
   // Called only by the gateway, with the shared token. Always answers 200 for a well-formed event,

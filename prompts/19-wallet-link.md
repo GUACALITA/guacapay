@@ -2,8 +2,15 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** code written; tests written but **not run**, at the user's request. Verification is pending.
+**Files produced:** `backend/migrations/005-wallets.sql`, `backend/src/wallets/service.js`, `backend/src/wallets/routes.js`, `backend/test/wallets.test.js`; edited `backend/src/app.js` (mounts `/api/wallets`, accepts an optional `walletReader` for tests)
+
+**Not done in this step:**
+- The frontend "My wallet" page. The setup guidance and the form belong to prompts 29 and 30.
+- The consent step. The wallet stays `pending` until prompt 20 calls `markWalletLinked`.
+- Revoking a wallet does not yet revoke its grants; prompt 20 adds that.
+
+**Verification pending:** run `npm test` in `backend/`. Expected: the new `wallets.test.js` cases (add, list, duplicate, `wallet_in_use`, owner-only revoke, relink after revoke, consent-only linking, https-only, sign-in required).
 
 ## Prompt
 

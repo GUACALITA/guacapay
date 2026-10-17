@@ -2,6 +2,13 @@
 
 **Scope (decision 017):** this is the only money rail in the product. Money moves between test wallets, in play money, and cannot be converted to cash. Rapyd is not part of this flow.
 
+## Linking a user's wallet (prompt 19, code written, tests not yet run)
+
+- A user adds a wallet by its address. The app reads the wallet's public document (no key) and stores its address, asset code and scale.
+- One active owner per wallet address. Adding a wallet that another user has linked is refused (`wallet_in_use`). A revoked wallet can be linked again.
+- A new wallet is `pending`. It becomes `linked` only through consent (prompt 20). Revoking is done by the owner only; anyone else gets the same 404 as for a missing wallet.
+- Only `https` addresses are accepted.
+
 Status: **partly answered.** The sender side is confirmed. Two items are still open before the test transfer: a receiver wallet, and the testnet limits.
 
 Sources checked on 2026-10-16:
