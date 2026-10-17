@@ -4,6 +4,7 @@ import { reconcilePending } from './reconcile.js';
 import { issuePendingClaims, resumePayouts } from '../claims/service.js';
 import { resumePayIns } from '../transfers/payments.js';
 import { resumeRequests } from '../requests/service.js';
+import { refreshPendingSplits } from '../splits/service.js';
 
 export function startPaymentPoller({ gateway, mailer, intervalMs = 60 * 1000 }) {
   let running = false;
@@ -28,6 +29,7 @@ export function startPaymentPoller({ gateway, mailer, intervalMs = 60 * 1000 }) 
         });
       }
       const claims = await issuePendingClaims({ mailer });
+      refreshPendingSplits();
       if (claims.issued > 0) {
         logger.info('poll issued claim links', claims);
       }

@@ -2,8 +2,22 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** code and tests written; **tests not run**, at the user's request. Verification is pending.
+**Files produced:** `backend/migrations/013-splits.sql`, `backend/src/splits/{service,routes}.js`, `backend/test/splits.test.js`; edited `backend/src/payments/service.js` (`parentSplitId` in `createPayment`), `backend/src/app.js` (`/api/splits`), `backend/src/payments/poller.js` (refreshes pending splits)
+
+**Choices made in this step:**
+- The migration is 013, because 012 is pools.
+- Split status is `pending` while any child is still in progress, `completed` when every child completed, and `partial` when all are finished and at least one failed or expired.
+- Every part is validated before anything is written: count (2 to 20), duplicate recipients, each amount, and the sum. A failed check creates no split and no child.
+- The split and its children are created in one transaction. Each part is then paid in turn. A part that cannot be paid is marked `failed` with a reason; the others still run.
+- A `split_payments.idempotency_key` (optional header, unique per payer) returns the first split for a repeated request. A repeated key with different details is refused with `idempotency_conflict`. This is not in the prompt; it stops a retried request from paying twice.
+- Each part uses the payer's permission. Its limit must cover the part; this is not checked here.
+
+**Not verified yet:**
+- The payer's permission limit against the sum of several parts. A payer whose permission covers one part may have later parts refused by the network. Those parts show as failed; the others are unaffected.
+- A real split between two test wallets (manual check).
+
+## Prompt
 
 ## Prompt
 

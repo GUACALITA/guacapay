@@ -18,6 +18,7 @@ import { createCustodyRouter } from './custody/routes.js';
 import { createRequestsRouter } from './requests/routes.js';
 import { createSubscriptionsRouter } from './subscriptions/routes.js';
 import { createPoolsRouter } from './pools/routes.js';
+import { createSplitsRouter } from './splits/routes.js';
 
 // Turns an async handler's rejection into a call to next(err).
 const route = (handler) => (req, res, next) => {
@@ -107,6 +108,7 @@ export function createApp({
   app.use('/api/requests', createRequestsRouter());
   app.use('/api/subscriptions', createSubscriptionsRouter());
   app.use('/api/pools', createPoolsRouter());
+  app.use('/api/splits', createSplitsRouter({ mailer }));
 
   // Called only by the gateway, with the shared token. Always answers 200 for a well-formed event,
   // including unknown or already-applied ones, so the gateway does not keep retrying.

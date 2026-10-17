@@ -94,7 +94,8 @@ function recordEvent(db, paymentId, from, to) {
 }
 
 // Returns { payment, created }. A repeated request with the same key returns the first payment.
-export function createPayment({ senderId, body, idempotencyKey, purpose = 'transfer', db = getDb() }) {
+// parentSplitId links a child payment to the split it is part of (prompt 27).
+export function createPayment({ senderId, body, idempotencyKey, purpose = 'transfer', parentSplitId = null, db = getDb() }) {
   const input = parseNewPayment(body);
   const key = parseIdempotencyKey(idempotencyKey);
 
@@ -119,8 +120,8 @@ export function createPayment({ senderId, body, idempotencyKey, purpose = 'trans
     const now = isoNow();
     db.prepare(
       `INSERT INTO payments (id, sender_id, recipient_email, amount_cents, currency, status, message,
-         idempotency_key, created_at, updated_at, purpose)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         idempotency_key, created_at, updated_at, purpose, parent_split_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       id,
       senderId,
@@ -133,6 +134,7 @@ export function createPayment({ senderId, body, idempotencyKey, purpose = 'trans
       now,
       now,
       purpose,
+      parentSplitId,
     );
     recordEvent(db, id, null, STATUS.CREATED);
 
