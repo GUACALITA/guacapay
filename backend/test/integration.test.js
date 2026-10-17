@@ -93,6 +93,15 @@ function paymentRow(id) {
   return getDb().prepare('SELECT status FROM payments WHERE id = ?').get(id);
 }
 
+// Puts a payment's money into custody, as the pay-in step does in production. Payouts are refused without it.
+function seedCustodyIn(paymentId) {
+  const db = getDb();
+  const payment = db.prepare('SELECT amount_cents, currency FROM payments WHERE id = ?').get(paymentId);
+  db.prepare(
+    "INSERT INTO custody_entries (id, payment_id, amount_cents, currency, direction, transfer_id) VALUES (lower(hex(randomblob(16))), ?, ?, ?, 'in', NULL)",
+  ).run(paymentId, payment.amount_cents, payment.currency);
+}
+
 test('a payment goes from sign-in to completed, with a lost webhook and a retry on the same claim link', async () => {
   const mailer = fakeMailer();
   const transfers = [];
@@ -135,6 +144,7 @@ test('a payment goes from sign-in to completed, with a lost webhook and a retry 
     assert.equal(paymentRow(paymentId).status, 'awaiting_payment');
 
     // 3. Rapyd's webhook arrives through the gateway and reports the payment as paid.
+    seedCustodyIn(paymentId);
     const event = { eventId: 'wh_int_1', type: 'PAYMENT_COMPLETED', paymentReference: paymentId };
     const applied = await call(base, 'POST', '/internal/payment-events', { token: TOKEN, body: event });
     assert.equal(applied.body.outcome, 'applied');

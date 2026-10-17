@@ -8,6 +8,7 @@ import { createGatewayClient } from './gateway-client.js';
 import { startPaymentPoller } from './payments/poller.js';
 import { attachLiveStatus } from './ws/live-status.js';
 import { mailerFromConfig } from './email/index.js';
+import { checkCustodyWallet } from './custody/service.js';
 
 try {
   const applied = runMigrations();
@@ -16,6 +17,17 @@ try {
   logger.error('migrations failed', { error: err.message });
   process.exit(1);
 }
+
+// Checks the custody wallet without stopping the server: it is needed for transfers, not for the rest of the app.
+checkCustodyWallet().then((report) => {
+  if (report.ok) {
+    logger.info('custody wallet ready');
+  } else if (report.reason === 'not_configured') {
+    logger.warn('custody wallet not configured; transfers are unavailable');
+  } else {
+    logger.error('custody wallet check failed', { reason: report.reason });
+  }
+});
 
 const gateway = createGatewayClient({ baseUrl: config.gateway.url, token: config.gateway.token });
 const mailer = mailerFromConfig();

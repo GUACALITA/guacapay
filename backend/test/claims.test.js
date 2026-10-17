@@ -45,6 +45,15 @@ function makeUser() {
 }
 
 // A payment that has been paid, with no claim yet.
+// Puts a payment's money into custody, as the pay-in step does in production. Payouts are refused without it.
+function seedCustodyIn(paymentId) {
+  const db = getDb();
+  const payment = db.prepare('SELECT amount_cents, currency FROM payments WHERE id = ?').get(paymentId);
+  db.prepare(
+    "INSERT INTO custody_entries (id, payment_id, amount_cents, currency, direction, transfer_id) VALUES (lower(hex(randomblob(16))), ?, ?, ?, 'in', NULL)",
+  ).run(paymentId, payment.amount_cents, payment.currency);
+}
+
 function makePaidPayment(senderId) {
   const recipient = `recipient-${randomUUID()}@example.com`;
   const { payment } = createPayment({
@@ -53,6 +62,7 @@ function makePaidPayment(senderId) {
   });
   attachCheckout(payment.id, `checkout_${randomUUID().replace(/-/g, '')}`);
   transitionPayment(payment.id, STATUS.PAID);
+  seedCustodyIn(payment.id);
   return { id: payment.id, recipient };
 }
 

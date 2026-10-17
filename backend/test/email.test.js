@@ -212,6 +212,15 @@ test('sign-in works end to end when mail is delivered, and the code arrives by e
   });
 });
 
+// Puts a payment's money into custody, as the pay-in step does in production. Payouts are refused without it.
+function seedCustodyIn(paymentId) {
+  const db = getDb();
+  const payment = db.prepare('SELECT amount_cents, currency FROM payments WHERE id = ?').get(paymentId);
+  db.prepare(
+    "INSERT INTO custody_entries (id, payment_id, amount_cents, currency, direction, transfer_id) VALUES (lower(hex(randomblob(16))), ?, ?, ?, 'in', NULL)",
+  ).run(paymentId, payment.amount_cents, payment.currency);
+}
+
 test('a claim link email is sent when a payment becomes claimable', async () => {
   const sender = makeUser();
   const { payment } = createPayment({
@@ -220,6 +229,7 @@ test('a claim link email is sent when a payment becomes claimable', async () => 
   });
   attachCheckout(payment.id, `checkout_${randomUUID().replace(/-/g, '')}`);
   transitionPayment(payment.id, STATUS.PAID);
+  seedCustodyIn(payment.id);
 
   const transport = fakeTransport();
   const mailer = createMailer({ transport, from: 'guacapay <no-reply@guacapay.local>' });
@@ -240,6 +250,7 @@ test('a completed claim emails the sender, and a failed email does not undo the 
   });
   attachCheckout(payment.id, `checkout_${randomUUID().replace(/-/g, '')}`);
   transitionPayment(payment.id, STATUS.PAID);
+  seedCustodyIn(payment.id);
 
   const link = [];
   await issueClaim(payment.id, {

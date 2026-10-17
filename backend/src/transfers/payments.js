@@ -7,6 +7,7 @@ import { AppError } from '../errors.js';
 import { STATUS } from '../payments/states.js';
 import { addPaymentEvent, transitionPayment } from '../payments/service.js';
 import { createTransfer, getTransfer, runTransfer, TRANSFER_STATUS } from './engine.js';
+import { recordIn } from '../custody/service.js';
 
 export const DIRECTION = Object.freeze({ IN: 'in', OUT: 'out' });
 const RESUME_BATCH_SIZE = 50;
@@ -68,6 +69,7 @@ export function settlePayIn(paymentId, transfer, { db = getDb() } = {}) {
 
     if (transfer.status === TRANSFER_STATUS.COMPLETED) {
       recordFinishedTransfer(paymentId, transfer, { db });
+      recordIn(db, { paymentId, transferId: transfer.id, amountCents: transfer.amount_cents, currency: transfer.currency });
       transitionPayment(paymentId, STATUS.PAID, { db });
       return { status: STATUS.PAID };
     }

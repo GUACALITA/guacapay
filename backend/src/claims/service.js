@@ -11,6 +11,7 @@ import { STATUS } from '../payments/states.js';
 import { addPaymentEvent, transitionPayment } from '../payments/service.js';
 import { payoutToRecipient, runPending } from '../transfers/payments.js';
 import { TRANSFER_STATUS } from '../transfers/engine.js';
+import { assertCustodyHolds, recordOut } from '../custody/service.js';
 
 export const CLAIM_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -150,7 +151,7 @@ export function validateDestination(raw) {
 }
 
 // Records the claim as used and moves the payment to completed. Called only when the payout completed.
-function completeClaim(payment, claim, address, { db, now }) {
+function completeClaim(payment, claim, address, { db, now, transferId }) {
   db.transaction(() => {
     db.prepare('UPDATE claims SET status = ?, destination = ?, claimed_at = ? WHERE id = ?').run(
       CLAIM_STATUS.CLAIMED,
@@ -158,6 +159,7 @@ function completeClaim(payment, claim, address, { db, now }) {
       iso(now),
       claim.id,
     );
+    recordOut(db, { paymentId: payment.id, transferId, amountCents: payment.amount_cents, currency: payment.currency });
     transitionPayment(payment.id, STATUS.CLAIMED, { db });
     transitionPayment(payment.id, STATUS.COMPLETED, { db });
   })();
@@ -192,6 +194,8 @@ export async function confirmClaim({ token, code, destination, transfer = payout
 
   // Both checks come before the code is used, so a typo in the wallet address does not spend the code.
   const address = validateDestination(destination);
+  // Checked before any money moves, and before the code is used: the custody ledger must hold this payment's amount.
+  assertCustodyHolds(payment.id, { db });
   verifyLoginCode(payment.recipient_email, code, { db, now });
 
   // Only one request may start the transfer.
@@ -202,8 +206,9 @@ export async function confirmClaim({ token, code, destination, transfer = payout
     throw new AppError('claim_in_progress', 409, 'This claim is being processed.');
   }
 
+  let sent;
   try {
-    await transfer({
+    sent = await transfer({
       paymentId: payment.id,
       amountCents: payment.amount_cents,
       currency: payment.currency,
@@ -224,7 +229,7 @@ export async function confirmClaim({ token, code, destination, transfer = payout
     return { status: STATUS.FAILED };
   }
 
-  completeClaim(payment, claim, address, { db, now });
+  completeClaim(payment, claim, address, { db, now, transferId: sent?.id ?? null });
   await notifySender(payment, { db, mailer });
   return { status: STATUS.COMPLETED };
 }
@@ -247,7 +252,7 @@ export async function resumePayouts({ mailer, db = getDb(), deps, now = Date.now
     const transfer = await runPending(row.transfer_id, { db, deps });
 
     if (transfer.status === TRANSFER_STATUS.COMPLETED) {
-      completeClaim(payment, claim, row.to_wallet_url, { db, now });
+      completeClaim(payment, claim, row.to_wallet_url, { db, now, transferId: transfer.id });
       await notifySender(payment, { db, mailer });
       settled += 1;
     } else if (transfer.status === TRANSFER_STATUS.FAILED) {
