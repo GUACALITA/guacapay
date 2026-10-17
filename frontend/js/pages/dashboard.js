@@ -21,6 +21,8 @@ const WALLET_STATUS_TEXT = Object.freeze({
   linked: 'Linked',
   revoked: 'Revoked',
 });
+// The colour edge on a wallet row: green when linked, amber while waiting, red when revoked.
+const WALLET_TONE = Object.freeze({ pending: 'wait', linked: 'ok', revoked: 'fail' });
 
 const SESSION_ERRORS = ['unauthorized', 'session_expired'];
 
@@ -65,45 +67,43 @@ function paragraph(text, className) {
 // An empty state: one line of text and one clear action.
 function emptyState(bodyId, text, action) {
   const p = document.createElement('p');
-  p.style.cssText = 'color:var(--gp-text3,#5a6a82);font-size:.88rem;margin:8px 0 4px';
+  p.className = 'empty-text';
   p.textContent = text;
   const nodes = [p];
   if (action) {
     const link = document.createElement('a');
     link.href = action.href;
     link.textContent = action.label;
-    link.style.cssText = 'font-size:.88rem';
+    link.className = 'empty-action';
     nodes.push(link);
   }
   $(bodyId).replaceChildren(...nodes);
 }
 
-// A list of rows. Each row is an array of text lines, plus an optional button.
+// A list of rows. Each row has text lines, an optional tone ('ok', 'wait' or 'fail') for its edge,
+// and an optional button. The first line is the title; the others are smaller.
 function list(bodyId, rows) {
-  const items = rows.map(({ lines, button }) => {
+  const items = rows.map(({ lines, tone, button }) => {
     const item = document.createElement('li');
-    item.style.cssText = 'background:var(--gp-card2,#1a2333);border:1px solid var(--gp-border,#1f2d3d);border-radius:12px;padding:12px 14px';
+    item.className = tone ? `row-item ${tone}` : 'row-item';
     lines.forEach((line, i) => {
-      const p = document.createElement('p');
-      p.style.cssText = i === 0
-        ? 'margin:0 0 3px;font-size:.88rem;font-weight:600'
-        : 'margin:0 0 2px;font-size:.8rem;color:var(--gp-text3,#5a6a82)';
-      p.textContent = line;
-      item.append(p);
+      const div = document.createElement('div');
+      div.className = i === 0 ? 'row-title' : 'row-meta';
+      div.textContent = line;
+      item.append(div);
     });
     if (button) {
       const control = document.createElement('button');
       control.type = 'button';
       control.textContent = button.label;
-      control.className = 'secondary';
-      control.style.cssText = 'margin-top:8px;width:auto;padding:6px 14px;font-size:.8rem;border-radius:8px';
+      control.className = `row-action ${button.variant ?? 'secondary'}`;
       control.addEventListener('click', button.onClick);
       item.append(control);
     }
     return item;
   });
   const ul = document.createElement('ul');
-  ul.style.cssText = 'list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px';
+  ul.className = 'row-list';
   ul.append(...items);
   $(bodyId).replaceChildren(ul);
 }
@@ -135,10 +135,12 @@ async function loadWallet() {
     'wallet-body',
     wallets.map((wallet) => ({
       lines: [wallet.wallet_url, `${wallet.asset_code} · ${WALLET_STATUS_TEXT[wallet.status] ?? 'Status unknown'}`],
+      tone: WALLET_TONE[wallet.status],
       button: wallet.status === 'revoked'
         ? null
         : {
             label: 'Unlink this wallet',
+            variant: 'danger',
             onClick: async () => {
               await api.post(`/api/wallets/${encodeURIComponent(wallet.id)}/revoke`);
               await section('wallet-body', 'wallet-error', loadWallet);
@@ -348,6 +350,36 @@ function flowSummary(flow) {
   return parts.join(' · ') || 'No amount set';
 }
 
+// The type picker: one coloured chip per flow type. The hidden <select> stays the source of truth.
+function renderTypeChips() {
+  const select = $('flow-type');
+  $('flow-type-chips').replaceChildren(
+    ...[...select.options].map((option) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.dataset.type = option.value;
+      chip.className = `flow-type-chip ${option.value}`;
+      chip.textContent = FLOW_TYPE_LABELS[option.value] ?? option.value;
+      chip.addEventListener('click', () => {
+        select.value = option.value;
+        paintTypeChips();
+        renderExtraFields();
+      });
+      return chip;
+    }),
+  );
+  paintTypeChips();
+}
+
+function paintTypeChips() {
+  const current = $('flow-type').value;
+  for (const chip of $('flow-type-chips').children) {
+    const active = chip.dataset.type === current;
+    chip.classList.toggle('selected', active);
+    chip.setAttribute('aria-pressed', String(active));
+  }
+}
+
 function renderExtraFields() {
   const type = $('flow-type').value;
   const container = $('flow-extra-fields');
@@ -378,6 +410,12 @@ function renderExtraFields() {
   }
 }
 
+// Sets the message under a flow's send panel. tone is 'ok', 'wait', 'fail', or empty for neutral.
+function setSendStatus(el, text, tone = '') {
+  el.className = tone ? `flow-send-status ${tone}` : 'flow-send-status';
+  el.textContent = text;
+}
+
 async function loadFlows() {
   const { flows, pq } = await api.get('/api/flows');
 
@@ -385,7 +423,9 @@ async function loadFlows() {
   const badge = $('flows-pq-status');
   if (badge && pq) {
     badge.className = `pq-badge ${pq.active ? 'active' : 'inactive'}`;
-    badge.innerHTML = `<span class="pq-dot"></span>${pq.active ? `Dilithium3 ON` : 'PQ OFF'}`;
+    const dot = document.createElement('span');
+    dot.className = 'pq-dot';
+    badge.replaceChildren(dot, pq.active ? 'Dilithium3 ON' : 'PQ OFF');
   }
 
   if (flows.length === 0) {
@@ -406,7 +446,7 @@ async function loadFlows() {
     head.append(typeBadge);
 
     const pqMark = document.createElement('span');
-    pqMark.style.cssText = 'font-size:.75rem;margin-left:auto;color:' + (flow.pq_verified ? 'var(--gp-green)' : 'var(--gp-red)');
+    pqMark.className = flow.pq_verified ? 'pq-mark ok' : 'pq-mark fail';
     pqMark.textContent = flow.pq_verified ? '🔐 PQ ✓' : '⚠ PQ ✗';
     head.append(pqMark);
 
@@ -429,7 +469,6 @@ async function loadFlows() {
       runBtn.type = 'button';
       runBtn.textContent = '▶ Run';
       runBtn.className = 'secondary';
-      runBtn.style.cssText = 'margin:0;width:auto;padding:7px 16px;font-size:.82rem;border-radius:8px';
       runBtn.addEventListener('click', async () => {
         runBtn.disabled = true;
         try {
@@ -441,18 +480,17 @@ async function loadFlows() {
         }
       });
 
-      // Send email button — reveals email form below
+      // Send email button — opens the email panel below
       const sendBtn = document.createElement('button');
       sendBtn.type = 'button';
       sendBtn.textContent = '📧 Enviar';
-      sendBtn.style.cssText = 'margin:0;width:auto;padding:7px 16px;font-size:.82rem;border-radius:8px';
+      sendBtn.className = 'secondary';
 
       // Archive button
       const archiveBtn = document.createElement('button');
       archiveBtn.type = 'button';
       archiveBtn.textContent = 'Archivar';
       archiveBtn.className = 'danger';
-      archiveBtn.style.cssText = 'margin:0;width:auto;padding:7px 16px;font-size:.82rem;border-radius:8px';
       archiveBtn.addEventListener('click', async () => {
         archiveBtn.disabled = true;
         try {
@@ -467,61 +505,61 @@ async function loadFlows() {
       actions.append(runBtn, sendBtn, archiveBtn);
       div.append(actions);
 
-      // Email form (hidden until Send is clicked)
+      // Email panel (hidden until Send is clicked)
       const emailForm = document.createElement('form');
-      emailForm.style.cssText = 'display:none;margin-top:14px;background:rgba(0,232,152,.04);border:1px solid rgba(0,232,152,.15);border-radius:10px;padding:14px';
+      emailForm.className = 'flow-send';
+      emailForm.hidden = true;
       emailForm.noValidate = true;
 
       const emailLbl = document.createElement('label');
+      emailLbl.className = 'flow-send-label';
       emailLbl.textContent = 'Recipient email(s)';
-      emailLbl.style.cssText = 'display:block;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--gp-text3);margin-bottom:6px';
 
       const emailInput = document.createElement('textarea');
+      emailInput.className = 'flow-send-input';
       emailInput.placeholder = 'client@email.com\nclient2@email.com';
       emailInput.rows = 3;
-      emailInput.style.cssText = 'width:100%;resize:vertical;font-size:.88rem';
 
       const emailStatus = document.createElement('p');
-      emailStatus.style.cssText = 'margin:8px 0 0;font-size:.82rem;min-height:1.2em';
+      emailStatus.className = 'flow-send-status';
 
       const emailSubmit = document.createElement('button');
       emailSubmit.type = 'submit';
+      emailSubmit.className = 'flow-send-submit';
       emailSubmit.textContent = 'Enviar invitaciones →';
-      emailSubmit.style.cssText = 'margin-top:10px;padding:9px 18px;font-size:.85rem;border-radius:8px';
 
       emailForm.append(emailLbl, emailInput, emailStatus, emailSubmit);
       div.append(emailForm);
 
       sendBtn.addEventListener('click', () => {
-        const open = emailForm.style.display !== 'none';
-        emailForm.style.display = open ? 'none' : 'block';
-        if (!open) emailInput.focus();
+        emailForm.hidden = !emailForm.hidden;
+        if (!emailForm.hidden) emailInput.focus();
       });
 
       emailForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const emails = emailInput.value.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean);
         if (emails.length === 0) {
-          emailStatus.textContent = 'Enter at least one email.';
-          emailStatus.style.color = 'var(--gp-red)';
+          setSendStatus(emailStatus, 'Enter at least one email.', 'fail');
           return;
         }
         emailSubmit.disabled = true;
-        emailStatus.style.color = 'var(--gp-text3)';
-        emailStatus.textContent = 'Sending…';
+        setSendStatus(emailStatus, 'Sending…');
         try {
           const r = await api.post(`/api/flows/${encodeURIComponent(flow.id)}/notify`, { emails });
           const ok = r.sent?.length ?? 0;
           const fail = r.failed?.length ?? 0;
-          emailStatus.style.color = fail ? 'var(--gp-amber)' : 'var(--gp-green)';
-          emailStatus.textContent = fail
-            ? `✓ Sent to ${ok}, failed: ${r.failed.join(', ')}`
-            : `✓ Sent to ${ok} recipient${ok !== 1 ? 's' : ''}`;
+          setSendStatus(
+            emailStatus,
+            fail
+              ? `✓ Sent to ${ok}, failed: ${r.failed.join(', ')}`
+              : `✓ Sent to ${ok} recipient${ok !== 1 ? 's' : ''}`,
+            fail ? 'wait' : 'ok',
+          );
           emailInput.value = '';
           meta.textContent = `${flowSummary(flow)} · ${r.flow?.run_count ?? flow.run_count + 1} runs · ${flow.status}`;
         } catch (error) {
-          emailStatus.style.color = 'var(--gp-red)';
-          emailStatus.textContent = messageForError(error);
+          setSendStatus(emailStatus, messageForError(error), 'fail');
         } finally {
           emailSubmit.disabled = false;
         }
@@ -532,7 +570,7 @@ async function loadFlows() {
   });
 
   const container = document.createElement('div');
-  container.style.cssText = 'display:flex;flex-direction:column;gap:10px';
+  container.className = 'flow-list';
   container.append(...items);
   $('flows-body').replaceChildren(container);
 }
@@ -589,40 +627,41 @@ function renderHistoryEntries(entries, bodyId, showAll) {
   const body = $('history-body');
 
   const ul = document.createElement('ul');
-  ul.style.cssText = 'list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px';
+  ul.className = 'history-list';
 
   for (const entry of visible) {
     const li = document.createElement('li');
-    li.style.cssText = 'background:var(--gp-card2,#1a2333);border:1px solid var(--gp-border,#1f2d3d);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px';
+    li.className = 'history-item';
 
-    const left = document.createElement('div');
-    const right = document.createElement('div');
-    right.style.cssText = 'text-align:right;flex-shrink:0';
+    const main = document.createElement('div');
+    main.className = 'history-main';
 
-    const mainLine = document.createElement('p');
-    mainLine.style.cssText = 'margin:0 0 2px;font-size:.88rem;font-weight:600';
-    mainLine.textContent = entry.text;
+    const text = document.createElement('div');
+    text.className = 'history-text';
+    text.textContent = entry.text;
 
-    const dateLine = document.createElement('p');
-    dateLine.style.cssText = 'margin:0;font-size:.78rem;color:var(--gp-text3,#5a6a82)';
-    dateLine.textContent = dateText(entry.at);
+    const date = document.createElement('div');
+    date.className = 'history-date';
+    date.textContent = dateText(entry.at);
 
-    left.append(mainLine, dateLine);
+    main.append(text, date);
 
-    const amtLine = document.createElement('p');
-    amtLine.style.cssText = 'margin:0 0 2px;font-size:.9rem;font-weight:700';
-    amtLine.textContent = formatCents(entry.amount, entry.currency);
+    const side = document.createElement('div');
+    side.className = 'history-side';
 
-    const statusLine = document.createElement('p');
-    statusLine.style.cssText = 'margin:0;font-size:.75rem;' + (
-      entry.status.includes('Completed') ? 'color:var(--gp-green,#00e898)' :
-      entry.status.includes('failed') || entry.status.includes('not go') ? 'color:var(--gp-red,#ff5c6a)' :
-      'color:var(--gp-text3,#5a6a82)'
-    );
-    statusLine.textContent = entry.status;
+    const amount = document.createElement('div');
+    amount.className = 'history-amount';
+    amount.textContent = formatCents(entry.amount, entry.currency);
 
-    right.append(amtLine, statusLine);
-    li.append(left, right);
+    const status = document.createElement('div');
+    const tone = entry.status.includes('Completed')
+      ? 'ok'
+      : entry.status.includes('failed') || entry.status.includes('not go') ? 'fail' : '';
+    status.className = tone ? `history-status ${tone}` : 'history-status';
+    status.textContent = entry.status;
+
+    side.append(amount, status);
+    li.append(main, side);
     ul.append(li);
   }
 
@@ -631,8 +670,7 @@ function renderHistoryEntries(entries, bodyId, showAll) {
   if (entries.length > HISTORY_PAGE) {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'secondary';
-    btn.style.cssText = 'margin-top:12px;font-size:.85rem;padding:8px 18px';
+    btn.className = 'secondary history-more';
     btn.textContent = showAll
       ? `Show less ↑`
       : `Show all ${entries.length} entries ↓`;
@@ -671,7 +709,11 @@ async function start() {
   $('dashboard').hidden = false;
   $('request-form').addEventListener('submit', onRequestSubmit);
   $('flow-form').addEventListener('submit', onFlowSubmit);
-  $('flow-type').addEventListener('change', renderExtraFields);
+  renderTypeChips();
+  $('flow-type').addEventListener('change', () => {
+    paintTypeChips();
+    renderExtraFields();
+  });
 
   await Promise.all([
     section('wallet-body', 'wallet-error', loadWallet),
