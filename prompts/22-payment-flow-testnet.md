@@ -2,8 +2,25 @@
 
 **Date:** 2026-10-17
 **Tool:** Claude Code (CLI), model Claude Haiku 5.5 (`claude-haiku-5-5`)
-**Status:** drafted, not executed
-**Files produced:** _pending_
+**Status:** code and tests written; **tests not run**, at the user's request. Verification is pending.
+**Files produced:** `backend/migrations/008-payment-method.sql`, `backend/src/transfers/payments.js`, `backend/test/payment-flow.test.js`; edited `backend/src/config.js` (`custody`), `backend/src/claims/service.js`, `backend/src/claims/routes.js`, `backend/src/payments/routes.js`, `backend/src/payments/poller.js`, `backend/src/payments/checkout.js`, `backend/src/balance/pay.js`, `backend/src/transfers/engine.js` (`direction`), `backend/test/balance.test.js` (testnet case removed), `frontend/payment.html`, `frontend/js/pages/payment.js`, `frontend/js/flows.js`, `frontend/js/messages.js`; deleted `backend/src/claims/transfer.js`
+
+**Choices made in this step:**
+- The migration number is 008, so prompt 23's migration becomes `009-custody.sql`.
+- Money moves in two transfers, both through the engine (prompt 21): pay-in (`direction` `in`, sender wallet to custody) and payout (`direction` `out`, custody to recipient).
+- A payment becomes `paid` only when the pay-in transfer completes. A retryable failure leaves it `awaiting_payment`; the poller resumes the same transfer, so no second send happens.
+- The payout keeps the injectable `transfer` contract of the claim step. A retryable outcome leaves the claim `claiming` and the payment `claimable`; `resumePayouts` settles it later. A definitive failure marks the payment `failed` and keeps the money in custody.
+- Transfers are recorded in the payment's event log (`transfer.recorded`) with their legs.
+- `payment_method` is set to `balance` by the balance payment and to `rapyd` by the card checkout. A new payment is `wallet`.
+- The app-balance and card options are removed from the payment page. The API routes remain for internal and development use.
+- `transfer_not_configured` is used for a missing custody wallet, so the claim reopens as before.
+
+**Not verified yet:**
+- The custody wallet must exist in `wallets` with a `linked` status and a granted permission. Prompt 23 checks this at startup.
+- Custody ledger entries (`custody_entries`) are not written here. Prompt 23 adds them to the same transactions that mark the payment `paid` (`settlePayIn`) and `completed` (`completeClaim`).
+- A real payment between two test wallets (manual check, not run).
+
+## Prompt
 
 ## Prompt
 

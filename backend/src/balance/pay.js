@@ -17,6 +17,7 @@ export function payWithBalance({ paymentId, userId, db = getDb() }) {
   }
 
   db.transaction(() => {
+    db.prepare("UPDATE payments SET payment_method = 'balance' WHERE id = ?").run(row.id);
     debit(userId, row.currency, row.amount_cents, 'payment', row.id, { db });
     transitionPayment(row.id, STATUS.AWAITING_PAYMENT, { db });
     transitionPayment(row.id, STATUS.PAID, { db });

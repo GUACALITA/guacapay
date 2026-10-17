@@ -1,7 +1,8 @@
 // Fallback for missed webhooks and missed claim links: runs once a minute.
 import { logger } from '../logger.js';
 import { reconcilePending } from './reconcile.js';
-import { issuePendingClaims } from '../claims/service.js';
+import { issuePendingClaims, resumePayouts } from '../claims/service.js';
+import { resumePayIns } from '../transfers/payments.js';
 
 export function startPaymentPoller({ gateway, mailer, intervalMs = 60 * 1000 }) {
   let running = false;
@@ -13,6 +14,12 @@ export function startPaymentPoller({ gateway, mailer, intervalMs = 60 * 1000 }) 
       const reconciled = await reconcilePending({ gateway });
       if (reconciled.applied > 0) {
         logger.info('poll applied payment updates', reconciled);
+      }
+      // Transfers still pending from an earlier request, in the order money moves: pay-in, then payout.
+      const payIns = await resumePayIns();
+      const payouts = await resumePayouts({ mailer });
+      if (payIns.settled + payouts.settled > 0) {
+        logger.info('poll settled transfers', { payIns: payIns.settled, payouts: payouts.settled });
       }
       const claims = await issuePendingClaims({ mailer });
       if (claims.issued > 0) {

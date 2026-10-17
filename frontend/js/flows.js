@@ -50,8 +50,14 @@ export async function payWithAppBalance(client, paymentId) {
   return client.post(`/api/payments/${encodeURIComponent(paymentId)}/pay-with-balance`);
 }
 
-export async function payWithTestnet(client, paymentId) {
-  return client.post(`/api/payments/${encodeURIComponent(paymentId)}/pay-with-testnet`);
+// Pays from one of the signed-in user's linked wallets. Resolves with { status }: paid, failed, or awaiting_payment.
+export async function payWithWallet(client, paymentId, walletId) {
+  return client.post(`/api/payments/${encodeURIComponent(paymentId)}/pay-with-wallet`, { wallet_id: walletId });
+}
+
+export async function fetchWallets(client) {
+  const result = await client.get('/api/wallets');
+  return result.wallets;
 }
 
 export async function startRapydCheckout(client, paymentId) {

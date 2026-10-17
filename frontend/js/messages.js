@@ -14,6 +14,7 @@ const PAYMENT_STATUS_TEXT = Object.freeze({
 const CLAIM_RESULT_TEXT = Object.freeze({
   completed: 'Claimed. The money is on its way to your wallet.',
   failed: 'The transfer did not go through. Contact the sender.',
+  processing: 'The transfer is still running. Your claim is saved; check again in a few minutes.',
 });
 
 const ERROR_TEXT = Object.freeze({
@@ -36,7 +37,8 @@ const ERROR_TEXT = Object.freeze({
   email_failed: 'We could not send the email. Try again shortly.',
   insufficient_balance: 'Your app balance is not enough for this payment. Recharge it with Rapyd, or pay with card.',
   payment_not_payable: 'This payment can no longer be paid from the app balance.',
-  testnet_not_connected: 'Paying with testnet balance is not connected yet. Pay with card (Rapyd) or use your app balance.',
+  wallet_not_linked: 'Choose one of your linked wallets to pay from.',
+  payment_not_payable: 'This payment can no longer be paid from a wallet.',
   invalid_amount: 'Enter a valid amount.',
   invalid_currency: 'Choose a supported currency.',
   invalid_message: 'Keep the message to 500 characters or fewer.',

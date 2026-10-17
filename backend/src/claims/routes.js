@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { createRateLimiter } from '../rate-limit.js';
 import { unconfiguredMailer } from '../auth/mailer.js';
 import { confirmClaim, verifyClaimEmail } from './service.js';
-import { unconfiguredTransfer } from './transfer.js';
+import { payoutToRecipient } from '../transfers/payments.js';
 
 const IP_WINDOW_MS = 15 * 60 * 1000;
 const IP_REQUEST_LIMIT = 20;
@@ -15,7 +15,7 @@ const route = (handler) => (req, res, next) => {
     .catch(next);
 };
 
-export function createClaimsRouter({ mailer = unconfiguredMailer, transfer = unconfiguredTransfer } = {}) {
+export function createClaimsRouter({ mailer = unconfiguredMailer, transfer = payoutToRecipient } = {}) {
   const router = Router();
   const limitByIp = createRateLimiter({
     windowMs: IP_WINDOW_MS,

@@ -1,11 +1,6 @@
-// Wiring for payment.html: shows the payment's status, the ways to pay while it is created, and keeps it live.
+// Wiring for payment.html: shows the payment's status, lets the sender pay from a linked wallet, and keeps it live.
 import { api } from '../api.js';
-import {
-  fetchPayment,
-  payWithAppBalance,
-  payWithTestnet,
-  startRapydCheckout,
-} from '../flows.js';
+import { fetchPayment, fetchWallets, payWithWallet } from '../flows.js';
 import { connectLiveStatus } from '../live-status.js';
 import { messageForError, messageForStatus } from '../messages.js';
 import { formatCents } from '../money.js';
@@ -19,7 +14,7 @@ function showPageError(text) {
 
 function renderStatus(status) {
   $('status-text').textContent = messageForStatus(status);
-  // The payment choices only make sense while the payment is still waiting to be paid.
+  // Paying only makes sense while the payment is still waiting for the first transfer.
   $('pay-section').hidden = status !== 'created';
 }
 
@@ -29,46 +24,32 @@ function renderSummary(payment) {
 }
 
 function setPayBusy(busy) {
-  for (const id of ['pay-balance', 'pay-testnet', 'pay-rapyd']) {
-    $(id).disabled = busy;
-  }
+  $('pay-wallet').disabled = busy;
+  $('pay-wallet-submit').disabled = busy;
 }
 
-function wirePayChoices(paymentId) {
-  $('pay-balance').addEventListener('click', async () => {
+// Lists only the wallets that finished consent. Returns false when there is none to pay from.
+async function loadWallets() {
+  const wallets = (await fetchWallets(api)).filter((wallet) => wallet.status === 'linked');
+  $('pay-wallet').replaceChildren(...wallets.map((wallet) => new Option(wallet.wallet_url, wallet.id)));
+  $('pay-empty').hidden = wallets.length > 0;
+  $('pay-form').hidden = wallets.length === 0;
+  return wallets.length > 0;
+}
+
+function wirePayForm(paymentId) {
+  $('pay-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
     setPayBusy(true);
-    $('pay-status').textContent = 'Paying with app balance…';
+    $('pay-status').textContent = 'Paying from your wallet…';
     try {
-      await payWithAppBalance(api, paymentId);
-      $('pay-status').textContent = '';
-      renderStatus('paid');
+      const outcome = await payWithWallet(api, paymentId, $('pay-wallet').value);
+      renderStatus(outcome.status);
+      $('pay-status').textContent =
+        outcome.status === 'awaiting_payment' ? 'The transfer is still running. This page will update when it finishes.' : '';
     } catch (error) {
       $('pay-status').textContent = messageForError(error);
     } finally {
-      setPayBusy(false);
-    }
-  });
-
-  $('pay-testnet').addEventListener('click', async () => {
-    setPayBusy(true);
-    $('pay-status').textContent = 'Checking testnet…';
-    try {
-      await payWithTestnet(api, paymentId);
-    } catch (error) {
-      $('pay-status').textContent = messageForError(error);
-    } finally {
-      setPayBusy(false);
-    }
-  });
-
-  $('pay-rapyd').addEventListener('click', async () => {
-    setPayBusy(true);
-    $('pay-status').textContent = 'Opening Rapyd…';
-    try {
-      const checkout = await startRapydCheckout(api, paymentId);
-      globalThis.location.assign(checkout.redirectUrl);
-    } catch (error) {
-      $('pay-status').textContent = messageForError(error);
       setPayBusy(false);
     }
   });
@@ -93,7 +74,7 @@ async function start() {
     $('status-section').hidden = false;
     renderSummary(payment);
     renderStatus(payment.status);
-    if (payment.status === 'created') wirePayChoices(paymentId);
+    if (payment.status === 'created' && (await loadWallets())) wirePayForm(paymentId);
   } catch (error) {
     if (error.code === 'unauthorized' || error.code === 'session_expired') {
       $('signed-out').hidden = false;

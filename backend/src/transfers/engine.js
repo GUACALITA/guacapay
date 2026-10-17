@@ -41,16 +41,16 @@ export function getTransfer(id, { db = getDb() } = {}) {
   return db.prepare('SELECT * FROM transfers WHERE id = ?').get(id);
 }
 
-export function createTransfer({ paymentId, fromWalletId, toWalletUrl, amountCents, currency, db = getDb() }) {
+export function createTransfer({ paymentId, fromWalletId, toWalletUrl, amountCents, currency, direction = 'in', db = getDb() }) {
   if (!Number.isSafeInteger(amountCents) || amountCents <= 0) {
     throw new AppError('invalid_amount', 400, 'The amount must be a positive whole number of cents.');
   }
   const id = randomUUID();
   const now = iso();
   db.prepare(
-    `INSERT INTO transfers (id, payment_id, from_wallet_id, to_wallet_url, amount_cents, currency, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id, paymentId ?? null, fromWalletId, toWalletUrl, amountCents, currency, TRANSFER_STATUS.PENDING, now, now);
+    `INSERT INTO transfers (id, payment_id, from_wallet_id, to_wallet_url, amount_cents, currency, status, direction, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(id, paymentId ?? null, fromWalletId, toWalletUrl, amountCents, currency, TRANSFER_STATUS.PENDING, direction, now, now);
   return getTransfer(id, { db });
 }
 

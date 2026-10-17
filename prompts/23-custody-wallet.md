@@ -13,7 +13,7 @@ Context: read prompts 18, 20, 21 and 22, and `backend/src/balance/` (the existin
 
 Steps:
 1. Config: `CUSTODY_WALLET_ADDRESS` (the platform's test wallet). Start-up check: the wallet exists and the platform key is linked to it.
-2. Migration `backend/migrations/008-custody.sql`: table `custody_entries` (`id`, `payment_id`, `amount_cents`, `currency`, `direction` = `in` | `out`, `transfer_id`, `created_at`). An `in` entry is written when transfer 1 completes; an `out` entry when transfer 2 completes.
+2. Migration `backend/migrations/009-custody.sql` (008 is used by prompt 22): table `custody_entries` (`id`, `payment_id`, `amount_cents`, `currency`, `direction` = `in` | `out`, `transfer_id`, `created_at`). An `in` entry is written when transfer 1 completes; an `out` entry when transfer 2 completes.
 3. `backend/src/custody/service.js`:
    - `custodyBalance(currency)`: the sum of entries. It must never be negative.
    - `recordIn` and `recordOut`, always inside the transaction that changes the payment.

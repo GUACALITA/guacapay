@@ -9,12 +9,15 @@ import { normalizeEmail } from '../validation.js';
 import { requestLoginCode, verifyLoginCode } from '../auth/service.js';
 import { STATUS } from '../payments/states.js';
 import { addPaymentEvent, transitionPayment } from '../payments/service.js';
+import { payoutToRecipient, runPending } from '../transfers/payments.js';
+import { TRANSFER_STATUS } from '../transfers/engine.js';
 
 export const CLAIM_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 // open: link can be used. claiming: a transfer is in progress. claimed: used, for good.
 export const CLAIM_STATUS = Object.freeze({ OPEN: 'open', CLAIMING: 'claiming', CLAIMED: 'claimed' });
 
+const RESUME_BATCH_SIZE = 50;
 const iso = (ms) => new Date(ms).toISOString();
 
 function formatAmount(cents, currency) {
@@ -146,9 +149,39 @@ export function validateDestination(raw) {
   return url.toString();
 }
 
-// Step 2 of claiming: checks the code and destination, then runs the transfer once.
-// Outcomes: completed, or failed (the transfer was attempted and did not go through).
-export async function confirmClaim({ token, code, destination, transfer, mailer, db = getDb(), now = Date.now() }) {
+// Records the claim as used and moves the payment to completed. Called only when the payout completed.
+function completeClaim(payment, claim, address, { db, now }) {
+  db.transaction(() => {
+    db.prepare('UPDATE claims SET status = ?, destination = ?, claimed_at = ? WHERE id = ?').run(
+      CLAIM_STATUS.CLAIMED,
+      address,
+      iso(now),
+      claim.id,
+    );
+    transitionPayment(payment.id, STATUS.CLAIMED, { db });
+    transitionPayment(payment.id, STATUS.COMPLETED, { db });
+  })();
+}
+
+// Records the claim as used and moves the payment to failed. The money stays in custody.
+function failClaim(payment, claim, address, reason, { db, now }) {
+  db.transaction(() => {
+    db.prepare('UPDATE claims SET status = ?, destination = ?, claimed_at = ? WHERE id = ?').run(
+      CLAIM_STATUS.CLAIMED,
+      address,
+      iso(now),
+      claim.id,
+    );
+    transitionPayment(payment.id, STATUS.CLAIMED, { db });
+    transitionPayment(payment.id, STATUS.FAILED, { db });
+    addPaymentEvent(payment.id, 'transfer.failed', { reason }, { db });
+  })();
+}
+
+// Step 2 of claiming: checks the code and destination, then runs the payout (custody to recipient) once.
+// Outcomes: completed, failed (the payout was attempted and did not go through), or processing (it is still running;
+// the claim stays in progress and resumePayouts settles it).
+export async function confirmClaim({ token, code, destination, transfer = payoutToRecipient, mailer, db = getDb(), now = Date.now() }) {
   const claim = findClaimByToken(token, db);
   assertUsable(claim, now);
 
@@ -182,34 +215,47 @@ export async function confirmClaim({ token, code, destination, transfer, mailer,
       db.prepare('UPDATE claims SET status = ? WHERE id = ?').run(CLAIM_STATUS.OPEN, claim.id);
       throw err;
     }
+    if (err.retryable) {
+      // The payout is still running. The claim stays in progress until resumePayouts settles it.
+      return { status: 'processing' };
+    }
 
-    db.transaction(() => {
-      db.prepare('UPDATE claims SET status = ?, destination = ?, claimed_at = ? WHERE id = ?').run(
-        CLAIM_STATUS.CLAIMED,
-        address,
-        iso(now),
-        claim.id,
-      );
-      transitionPayment(payment.id, STATUS.CLAIMED, { db });
-      transitionPayment(payment.id, STATUS.FAILED, { db });
-      addPaymentEvent(payment.id, 'transfer.failed', { reason: err.code ?? 'unknown' }, { db });
-    })();
+    failClaim(payment, claim, address, err.code ?? 'unknown', { db, now });
     return { status: STATUS.FAILED };
   }
 
-  db.transaction(() => {
-    db.prepare('UPDATE claims SET status = ?, destination = ?, claimed_at = ? WHERE id = ?').run(
-      CLAIM_STATUS.CLAIMED,
-      address,
-      iso(now),
-      claim.id,
-    );
-    transitionPayment(payment.id, STATUS.CLAIMED, { db });
-    transitionPayment(payment.id, STATUS.COMPLETED, { db });
-  })();
-
+  completeClaim(payment, claim, address, { db, now });
   await notifySender(payment, { db, mailer });
   return { status: STATUS.COMPLETED };
+}
+
+// Finishes payouts that were still pending: the transfer runs again, and the claim settles when it ends.
+export async function resumePayouts({ mailer, db = getDb(), deps, now = Date.now() } = {}) {
+  const rows = db
+    .prepare(
+      `SELECT t.id AS transfer_id, t.payment_id, t.to_wallet_url
+       FROM transfers t JOIN payments p ON p.id = t.payment_id
+       WHERE t.direction = 'out' AND t.status = ? AND p.status = ?
+       ORDER BY t.updated_at LIMIT ?`,
+    )
+    .all(TRANSFER_STATUS.PENDING, STATUS.CLAIMABLE, RESUME_BATCH_SIZE);
+
+  let settled = 0;
+  for (const row of rows) {
+    const payment = db.prepare('SELECT * FROM payments WHERE id = ?').get(row.payment_id);
+    const claim = db.prepare('SELECT * FROM claims WHERE payment_id = ?').get(row.payment_id);
+    const transfer = await runPending(row.transfer_id, { db, deps });
+
+    if (transfer.status === TRANSFER_STATUS.COMPLETED) {
+      completeClaim(payment, claim, row.to_wallet_url, { db, now });
+      await notifySender(payment, { db, mailer });
+      settled += 1;
+    } else if (transfer.status === TRANSFER_STATUS.FAILED) {
+      failClaim(payment, claim, row.to_wallet_url, transfer.failure_code, { db, now });
+      settled += 1;
+    }
+  }
+  return { checked: rows.length, settled };
 }
 
 // The payment is already completed, so a failed notification is logged and does not undo anything.

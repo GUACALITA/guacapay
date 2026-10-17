@@ -177,19 +177,6 @@ test('when the app balance is not enough, the payment is refused and nothing mov
   assert.equal(balanceOf(user.id), 500);
 });
 
-test('the testnet option is shown but says clearly that it is not connected yet, and moves nothing', async () => {
-  const user = makeUser();
-  await withServer(createApp({ gateway: gatewayStub(), mailer: fakeMailer() }), async (base) => {
-    const created = await call(base, 'POST', '/api/payments', { token: user.token, body: transferBody(700) });
-    const result = await call(base, 'POST', `/api/payments/${created.body.id}/pay-with-testnet`, { token: user.token });
-    assert.equal(result.status, 503);
-    assert.equal(result.body.error.code, 'testnet_not_connected');
-
-    const status = getDb().prepare('SELECT status FROM payments WHERE id = ?').get(created.body.id).status;
-    assert.equal(status, 'created');
-  });
-});
-
 test('a user cannot pay with someone else\'s balance or payment', async () => {
   const owner = makeUser();
   const other = makeUser();

@@ -9,8 +9,10 @@ import {
   listPaymentsForUser,
   toPublicPayment,
 } from './service.js';
+import { STATUS } from './states.js';
 import { startCheckout } from './checkout.js';
 import { payWithBalance } from '../balance/pay.js';
+import { payFromWallet } from '../transfers/payments.js';
 import { issueClaim } from '../claims/service.js';
 import { unconfiguredMailer } from '../auth/mailer.js';
 import { logger } from '../logger.js';
@@ -42,15 +44,23 @@ export function createPaymentsRouter({ gateway = null, mailer = unconfiguredMail
     }),
   );
 
-  // Paying with testnet balance needs the Open Payments transfer, which is not connected yet.
+  // Pays from one of the sender's linked test wallets. Money goes to the custody wallet first; the payment is paid only then.
   router.post(
-    '/:id/pay-with-testnet',
-    route(() => {
-      throw new AppError(
-        'testnet_not_connected',
-        503,
-        'Paying with testnet balance is not connected yet. Pay with Rapyd or use your app balance.',
-      );
+    '/:id/pay-with-wallet',
+    route(async (req, res) => {
+      const outcome = await payFromWallet({
+        paymentId: req.params.id,
+        userId: req.user.id,
+        walletId: req.body?.wallet_id,
+      });
+      if (outcome.status === STATUS.PAID) {
+        try {
+          await issueClaim(req.params.id, { mailer });
+        } catch (err) {
+          logger.warn('claim issue after wallet payment failed', { paymentId: req.params.id, error: err.message });
+        }
+      }
+      res.json(outcome);
     }),
   );
 

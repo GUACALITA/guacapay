@@ -34,10 +34,13 @@
     </section>
 
     <section class="card" id="pay-section" aria-labelledby="pay-title" hidden>
-      <h2 id="pay-title">How do you want to pay?</h2>
-      <button type="button" id="pay-balance">Pay with app balance</button>
-      <button type="button" id="pay-testnet" class="secondary">Pay with testnet balance</button>
-      <button type="button" id="pay-rapyd" class="secondary">Pay with card (Rapyd)</button>
+      <h2 id="pay-title">Pay from my wallet</h2>
+      <p class="muted" id="pay-empty" hidden>You have no linked wallet yet. Link a test wallet first.</p>
+      <form id="pay-form" novalidate>
+        <label for="pay-wallet">Wallet to pay from</label>
+        <select id="pay-wallet" name="wallet"></select>
+        <button type="submit" id="pay-wallet-submit">Pay from my wallet</button>
+      </form>
       <p id="pay-status" class="status" role="status" aria-live="polite"></p>
     </section>
 

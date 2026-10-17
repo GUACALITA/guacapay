@@ -11,7 +11,7 @@ export function attachCheckout(paymentId, checkoutId, { db = getDb() } = {}) {
     if (!row || row.status !== STATUS.CREATED) {
       throw new AppError('checkout_not_available', 409, 'This payment is not waiting for a checkout.');
     }
-    db.prepare('UPDATE payments SET rapyd_checkout_id = ? WHERE id = ?').run(checkoutId, paymentId);
+    db.prepare("UPDATE payments SET rapyd_checkout_id = ?, payment_method = 'rapyd' WHERE id = ?").run(checkoutId, paymentId);
     transitionPayment(paymentId, STATUS.AWAITING_PAYMENT, { db });
   })();
 }

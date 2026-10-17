@@ -83,7 +83,9 @@ This is the normal path. Each step names the code that does it.
 
 7. **The recipient claims.** On `claim.html` the recipient enters their email (`POST /api/claims/verify-email`). A code is sent to that address. They enter the code and a wallet address (`POST /api/claims/confirm`). The wallet must be an `https` address on an allowed host. The code is checked after the destination, so a typo does not use it up.
 
-8. **The transfer.** The claim moves to `claiming`, so no second request can start a transfer. The transfer step runs (`claims/transfer.js`). Until the Open Payments transfer exists, it returns 503 and the claim reopens. When it succeeds, the claim is `claimed`, the payment goes `claimable` → `claimed` → `completed`, and the sender gets a confirmation email. If the transfer fails, the payment goes to `failed`, and the reason is recorded.
+8. **The payout.** The claim moves to `claiming`, so no second request can start a payout. The payout runs as transfer 2 (`transfers/payments.js`): custody wallet to the recipient's wallet. If custody is not configured, it returns 503 and the claim reopens. When the transfer completes, the claim is `claimed`, the payment goes `claimable` → `claimed` → `completed`, and the sender gets a confirmation email. If the transfer fails for good, the payment goes to `failed` and the reason is recorded; the money stays in custody. If the transfer is still running, the claim stays `claiming` and the poller settles it later.
+
+The sender's money reaches custody first, through transfer 1 (`direction` `in`, sender wallet to custody). The payment becomes `paid` only when that transfer completes, and the claim link is then issued.
 
 9. **Live updates.** Each change in step 4 to 8 publishes an event after its transaction commits. The browser's `payment.html` gets it over `/ws` (`ws/live-status.js`), so the status changes without a refresh.
 

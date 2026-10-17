@@ -99,6 +99,11 @@ export const config = {
     privateKeyPath: process.env.OPEN_PAYMENTS_PRIVATE_KEY_PATH || '',
     receiverWalletAddress: process.env.OPEN_PAYMENTS_RECEIVER_WALLET_ADDRESS || '',
   },
+  // The platform's custody wallet: holds money for unclaimed payments. Its ID is the wallets row of the custody wallet.
+  custody: {
+    walletId: process.env.CUSTODY_WALLET_ID || '',
+    address: process.env.CUSTODY_WALLET_ADDRESS || '',
+  },
   // Key for encrypting consent tokens at rest. Required only when a grant is used.
   grantEncryptionKey: process.env.GRANT_ENCRYPTION_KEY || '',
   // Used for links in emails (claim links). Local by default.
